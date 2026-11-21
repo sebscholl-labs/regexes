@@ -22,17 +22,51 @@ features:
 
 ## A taste
 
+The patterns worth naming are the ones that are easy to get almost right.
+
+**The IPv4 regex everyone writes finds addresses that aren't there.**
+
 ```ruby
-require 'regexes'
+log = 'Retry 10.0.0.1, not 1.2.3.456'
 
-Regexes.lowercase_alphanumeric.excluded.one_or_more     # => /[^a-z0-9]+/
-Regexes.lowercase_letters.excluded.one_or_more.leading  # => /\A[^a-z]+/
-
-'northwind  erp!!'.gsub(Regexes.lowercase_alphanumeric.excluded.one_or_more, '_')
-# => "northwind_erp_"
-
-Regexes.uuid.whole.match?('01890a5d-ac96-774b-bcce-b302099a8057')  # => true
+log.scan(/\d{1,3}(?:\.\d{1,3}){3}/)   # => ["10.0.0.1", "1.2.3.456"]
+log.scan(Regexes.ipv4_address)         # => ["10.0.0.1"]
 ```
 
-Each line reads as what it matches. The written-out regex is what you'd get by hand, and the
-chain is what you read in review.
+**IPv6 has nine compressed forms and an embedded IPv4 one.** Nobody writes it from memory.
+
+```ruby
+Regexes.ipv6_address.whole.match?('::ffff:192.0.2.1')  # => true
+Regexes.ipv6_address.whole.match?('1::2::3')           # => false
+```
+
+**`^` and `$` are line anchors in Ruby,** so a validation written with them lets a second line through.
+
+```ruby
+"ok\nevil".match?(/^[a-z]+$/)                                  # => true
+Regexes.lowercase_letters.one_or_more.whole.match?("ok\nevil")  # => false
+```
+
+**A date's fields have ranges,** and `\d{2}` doesn't know them.
+
+```ruby
+Regexes.iso8601_date_time.whole.match?('2026-11-21T14:30:05+05:30')  # => true
+Regexes.iso8601_date_time.whole.match?('2026-13-21T25:61')           # => false
+```
+
+**Parts come back by name,** in the standard's own terms.
+
+```ruby
+version = Regexes.semantic_version.match('2.1.3-rc.1+sha.5114f85')
+version[:prerelease]  # => "rc.1"
+version[:build]       # => "sha.5114f85"
+
+Regexes.http_url.match('http://[::1]:8080/a?b=c#d')[:host]  # => "[::1]"
+```
+
+**The same pattern runs in the browser** and in a JSON Schema, translated rather than copied by hand.
+
+```ruby
+Regexes.e164_phone_number.whole.ecma_source
+# => "^(?<![0-9+])\\+[1-9][0-9]{1,14}(?![0-9])$"
+```
