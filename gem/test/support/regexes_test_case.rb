@@ -26,15 +26,17 @@ class RegexesTestCase < Minitest::Test
     # expression every time. Then one test that every pattern defined in the section's file has a row.
     #
     # A pattern that ends looking ahead at a character it doesn't take (+folded_line_break+) never matches a
-    # text whole; its row has no matches, and its section tests it in text instead.
+    # text whole; its row has no matches, and its section tests it in text instead. A pattern that must end its
+    # line (+markdown_code_block+) is found between line feeds rather than {AROUND}: its row ends with
+    # <tt>{ around: "\n" }</tt>.
     #
-    # @param table [Hash{Symbol => Array(Array<String>, Array<String>)}] each pattern, with the texts it must
-    #   match whole and the texts it must refuse whole
+    # @param table [Hash{Symbol => Array}] each pattern, with the texts it must match whole, the texts it must
+    #   refuse whole, and optionally a Hash with +around+, what to find its first match between
     # @param defined_in [String] the section's file, under +lib/regexes/patterns/+, without +.rb+
     # @return [void]
     def cases(table, defined_in:)
       CASES.merge!(table)
-      table.each { |name, (matches, refuses)| pattern_tests(name, matches, refuses) }
+      table.each { |name, (matches, refuses, options)| pattern_tests(name, matches, refuses, **options.to_h) }
 
       test "every pattern defined in patterns/#{defined_in}.rb has cases" do
         assert_equal patterns_defined_in("patterns/#{defined_in}.rb").sort, table.keys.sort
@@ -46,18 +48,20 @@ class RegexesTestCase < Minitest::Test
     # @param name [Symbol] a named pattern
     # @param matches [Array<String>] texts it must match whole, the first a typical one
     # @param refuses [Array<String>] texts it must refuse whole
+    # @param around [String] what to find its first match between
     # @return [void]
-    def pattern_tests(name, matches, refuses)
+    def pattern_tests(name, matches, refuses, around: AROUND)
       matches.each { |text| test("#{name} matches #{text.inspect} whole") { assert_match pattern(name).whole, text } }
       refuses.each { |text| test("#{name} refuses #{text.inspect} whole") { refute_match pattern(name).whole, text } }
-      example_tests(name, matches.first) if matches.any?
+      example_tests(name, matches.first, around) if matches.any?
       object_tests(name)
     end
 
     # @param name [Symbol] a named pattern
     # @param example [String] a text it matches whole
+    # @param around [String] what to find it between
     # @return [void]
-    def example_tests(name, example)
+    def example_tests(name, example, around)
       test("#{name} whole refuses its first match with a line after it") do
         refute_match pattern(name).whole, "#{example}\n#{AROUND}"
       end
@@ -65,7 +69,7 @@ class RegexesTestCase < Minitest::Test
         refute_match pattern(name).whole, " #{example}"
       end
       test("#{name} finds its first match inside other text") do
-        assert_includes found(pattern(name), "#{AROUND}#{example}#{AROUND}"), example
+        assert_includes found(pattern(name), "#{around}#{example}#{around}"), example
       end
     end
 

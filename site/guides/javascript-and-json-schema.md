@@ -58,7 +58,8 @@ Where ECMAScript has no faithful equivalent, `ecma_source` raises `Regexes::Untr
 hand back a pattern that matches something else:
 
 - a grapheme cluster, `\X` — which is why `Regexes.emoji` can't be translated;
-- a capture name used twice, atomic groups, and inline options such as a case-insensitive part inside a
+- a capture name used twice (a back-reference to a name, `\k<fence>`, is kept, as ECMAScript reads it alike;
+  one by number is refused), atomic groups, and inline options such as a case-insensitive part inside a
   case-sensitive sequence;
 - Ruby's `^`, `$` and `\Z`, and the hex escape `\h`;
 - extended mode (`x`), and a dot that matches newlines (`m`).

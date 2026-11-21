@@ -7,7 +7,16 @@ class RegexesTextTest < RegexesTestCase
   WIKIPEDIA_LINK = '[Ruby](https://en.wikipedia.org/wiki/Ruby_(programming_language))'
 
   cases({
-          markdown_code_span:       [['`get_order`', '`a b`', '` `', '`<b>`'], ['``', '`open get_order', 'get_order', '```']],
+          markdown_code_span:       [['`get_order`', '`a b`', '` `', '`<b>`', '``a ` b``', '```a `` b```', "`a\nb`", "`a\r\nb`",
+                                      '`` `a` ``'],
+                                     ['``', '`open get_order', 'get_order', '```', "`a\n\nb`", "`a\n \nb`", "`a\r\n\r\nb`",
+                                      '``a`', '`a``', '``a ` b`', '`a` `b`']],
+          markdown_code_block:      [["```ruby\nputs 1\n```", "```\ncode\n```", "~~~\ncode\n~~~", "```\n```",
+                                      "````\na\n```\nb\n````", "```ruby\r\nx\r\n```", "```ruby {.class}\nx\n```",
+                                      "```\nx\n   ```", "```\nx\n```  ", "~~~ruby\nx\n~~~~"],
+                                     ["```\nnever closed", "``\nx\n``", "```\nx\n``", "```\nx\n~~~", "~~~\nx\n```",
+                                      "```ruby\nx\n```ruby", "```\nx\n    ```", "```ruby`x\ny\n```", "```ruby\nx```", ''],
+                                     { around: "\n" }],
           markdown_link:            [['[the docs](https://acme.example/docs)', WIKIPEDIA_LINK, '[a](b)', '[a b](/relative/path)'],
                                      ['[a]( b)', '[a](b c)', '[a](b "t")', '[](b)', '[a][1]', '[a]', '(b)', '[a](b', '']],
           ruby_format_reference:    [['%{name}', '%<count>d', '%<price>.2f', '%<n>s', '%<width>-10s', '%{a_1}'],
@@ -26,6 +35,49 @@ class RegexesTextTest < RegexesTestCase
 
   test 'a markdown code span captures the code' do
     assert_equal 'get_order', Regexes.markdown_code_span.match('call `get_order` now')[:code]
+  end
+
+  test 'a markdown code span of two backticks captures the backtick inside' do
+    assert_equal 'a ` b', Regexes.markdown_code_span.match('``a ` b``')[:code]
+  end
+
+  test 'markdown code spans are found each whole in a sentence' do
+    assert_equal ['`a`', '``b ` c``'], found(Regexes.markdown_code_span, 'see `a` and ``b ` c`` here')
+  end
+
+  test 'a markdown code span never reaches across a blank line' do
+    assert_empty found(Regexes.markdown_code_span, "one `open\n\nclose` two")
+  end
+
+  # The document the code block tests read: prose, a Ruby block, prose, and a tilde block with no language.
+  DOCUMENT = "Intro\n\n```ruby\nputs 1\nputs 2\n```\n\nThen:\n\n~~~\nplain\n~~~\n"
+
+  test 'a markdown code block captures its language' do
+    assert_equal 'ruby', Regexes.markdown_code_block.line_leading.match(DOCUMENT)[:language]
+  end
+
+  test 'a markdown code block captures its code, line by line' do
+    assert_equal "puts 1\nputs 2\n", Regexes.markdown_code_block.line_leading.match(DOCUMENT)[:code]
+  end
+
+  test 'a markdown code block without a language captures none' do
+    assert_nil Regexes.markdown_code_block.match("~~~\nplain\n~~~")[:language]
+  end
+
+  test 'a markdown code block captures the first word of the info string' do
+    assert_equal 'ruby', Regexes.markdown_code_block.match("``` ruby linenos\nx\n```")[:language]
+  end
+
+  test 'a markdown code block holds a shorter fence as code' do
+    assert_equal "a\n```\nb\n", Regexes.markdown_code_block.match("````\na\n```\nb\n````")[:code]
+  end
+
+  test 'markdown code blocks are found each in a document' do
+    assert_equal 2, found(Regexes.markdown_code_block.line_leading, DOCUMENT).size
+  end
+
+  test 'a markdown code block must start a line when asked to' do
+    assert_empty found(Regexes.markdown_code_block.line_leading, "text ```ruby\nx\n```")
   end
 
   test 'a markdown link captures its text' do

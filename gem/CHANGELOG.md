@@ -31,8 +31,10 @@
   `mac_address`.
 - Mail: `message_id` and `header_field_name`.
 - Codes: `e164_phone_number`, `iban`, `bic`, `language_tag` and `hex_color`.
-- Text: `markdown_link`, `ruby_format_reference`, `mustache_tag`, `shell_variable_reference`, `file_extension` and
-  `emoji`.
+- Text: `markdown_code_block` (a fenced block, capturing its `language` and `code`), `markdown_link`,
+  `ruby_format_reference`, `mustache_tag`, `shell_variable_reference`, `file_extension` and `emoji`.
+- `Regexes.markdown_code_span` takes a fence of any number of backticks (so ``` ``a ` b`` ``` holds a backtick),
+  closing at the first run of the same length, and runs over a line break but never a blank line.
 - `Expression#ecma_source` and `#ecma_flags` translate an expression into ECMAScript, for JavaScript and JSON
   Schema; what ECMAScript can't match the same way raises `Regexes::UntranslatableError`.
 

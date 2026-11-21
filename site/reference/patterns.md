@@ -269,7 +269,8 @@ Captures:
 ::: v-pre
 | Pattern | Matches | Refuses |
 |---|---|---|
-| `markdown_code_span` | `` `get_order` `` `` `a b` `` | ` `` `, an unclosed backtick |
+| `markdown_code_span` | `` `get_order` ``, ``` ``a ` b`` ```, a span over one line break | ` `` `, an unclosed backtick, a span over a blank line, `` ``a` `` |
+| `markdown_code_block` | a fenced block: ```` ```ruby ````, its lines, ```` ``` ````; or with `~~~` | never closed, closed by a shorter fence or the other character, an indented opening |
 | `markdown_link` | `[the docs](https://acme.example/docs)`, a destination with one level of parentheses | with a title, `[a][1]`, `[](b)` |
 | `ruby_format_reference` | `%{name}` `%<count>d` `%<price>.2f` | `%%{name}` `%{}` `%<n>` |
 | `mustache_tag` | `{{name}}` `{{{html}}}` `{{#items}}` `{{/items}}` `{{ user.name }}` | `{name}` `{{}}` `{{ }}` |
@@ -277,6 +278,25 @@ Captures:
 | `file_extension` | `.gz` `.rb` `.MP4` | `gz` `.tar.gz` (whole) |
 | `emoji` | `👍` `👍🏽` `👨‍👩‍👧` `🇩🇪` `1️⃣` `©` | `a` `1` `#`, two emoji |
 :::
+
+A code span closes at the first run of exactly as many backticks as opened it, so two backticks hold one
+(``` ``a ` b`` ```), and it may run over a line break but never a blank line, which ends the paragraph
+(CommonMark §6.1). Its `code` is captured as written: the one space CommonMark strips from each end when
+both are there is kept.
+
+A fenced code block (CommonMark §4.5) opens with three or more backticks or tildes and an optional info
+string, and closes on a line of at least as many of the same character. Its `language` is the first word of
+the info string, nil when there is none; its `code` is the lines between the fences, each with its line
+break. Use it with `.line_leading`, so the opening fence starts a line:
+
+```ruby
+markdown.to_enum(:scan, Regexes.markdown_code_block.line_leading).map do
+  Regexp.last_match.values_at(:language, :code)
+end
+# => [["ruby", "puts 1\nputs 2\n"], [nil, "plain\n"]]
+```
+
+A block never closed, which CommonMark lets run to the end of the document, isn't matched.
 
 `emoji` takes each emoji as the one character a reader sees — with its skin tone, its joiners, a flag's
 pair of regional indicators. A character Unicode marks pictographic counts, so `©` and `™` do; a plain digit
@@ -290,7 +310,8 @@ Captures:
 
 | Pattern | Captures |
 |---|---|
-| `markdown_code_span` | `code` |
+| `markdown_code_span` | `code` `fence` |
+| `markdown_code_block` | `language` `code` `fence` `marker` |
 | `markdown_link` | `text` `destination` |
 | `ruby_format_reference` | `name` |
 | `mustache_tag` | `name` `sigil` |

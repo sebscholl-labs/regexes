@@ -10,8 +10,17 @@ module Regexes
   tag_name    = '[^{}\s](?:[^{}]*[^{}\s])?'
   sigil       = '[#^/!&>]'
   blank       = '[ \t]*'
+  line_break  = '(?:\r\n|\r|\n)'
+  # One character of a code span: anything but a line break, or a line break that doesn't end a paragraph.
+  span_char   = "(?:[^\\r\\n]|#{line_break}(?![ \\t]*(?:\\r|\\n|\\z)))"
 
-  MARKDOWN_CODE_SPAN       = Expression.new('`(?<code>[^`]+)`')
+  MARKDOWN_CODE_SPAN       = Expression.new(
+    "(?<!`)(?<fence>`+)(?!`)(?<code>(?:(?!(?<!`)\\k<fence>(?!`))#{span_char})+)(?<!`)\\k<fence>(?!`)"
+  )
+  MARKDOWN_CODE_BLOCK      = Expression.new(
+    "(?<fence>(?<marker>[`~])\\k<marker>{2,})[ \\t]*(?<language>[^\\s`]+)?[^`\\r\\n]*#{line_break}" \
+    "(?<code>(?:[^\\r\\n]*#{line_break})*?) {0,3}\\k<fence>\\k<marker>*[ \\t]*(?=\\r|\\n|\\z)"
+  )
   MARKDOWN_LINK            = Expression.new("\\[(?<text>[^\\[\\]\\n]+)\\]\\((?<destination>#{destination})\\)")
   RUBY_FORMAT_REFERENCE    = Expression.new(
     "(?<!%)%(?=[{<](?<name>#{name}))(?:\\{#{name}\\}|<#{name}>[-+ 0#]*[0-9]*(?:\\.[0-9]+)?[A-Za-z])"
@@ -26,11 +35,23 @@ module Regexes
     '(?=\p{Extended_Pictographic}|\p{Regional_Indicator}|[0-9#*]️?⃣)\X'
   )
 
-  # Markdown's inline code, a code span in CommonMark's terms: +`get_order`+, its text captured as +code+. Only
-  # the single-backtick form: a span opened by two backticks, to hold one, is not matched.
+  # Markdown's inline code, a code span in CommonMark's terms (§6.1): +`get_order`+, and +``a ` b``+, whose fence of
+  # two backticks lets it hold one. It closes at the first run of exactly as many backticks as opened it, and may
+  # run over a line break but never a blank line, which ends the paragraph. It captures +code+, as written: the
+  # one space CommonMark strips from each end when both are there is kept; and +fence+, the backticks.
   #
-  # @return [Expression] text between a pair of backticks, never empty
+  # @return [Expression] text between two runs of the same number of backticks, never empty
   def markdown_code_span = MARKDOWN_CODE_SPAN
+
+  # +Regexes.markdown_code_block.line_leading+ matches a fenced code block (CommonMark §4.5): a line of three or
+  # more backticks or tildes and an optional info string, the code's lines, and a line closing it with at least as
+  # many of the same character. It captures +language+, the first word of the info string (+ruby+ of
+  # <tt>```ruby</tt>), nil when there is none; +code+, the lines between the fences, each with its line break; and
+  # +fence+ and +marker+, which close it. A block never closed (which CommonMark lets run to the end of the
+  # document) and an opening fence indented are not matched; +.line_leading+ requires the fence to start a line.
+  #
+  # @return [Expression] a fenced code block, from its opening fence to its closing one
+  def markdown_code_block = MARKDOWN_CODE_BLOCK
 
   # +Regexes.markdown_link+ matches +[the docs](https://acme.example/docs)+ and
   # +[Ruby](https://en.wikipedia.org/wiki/Ruby_(programming_language))+ (one level of parentheses), never a link

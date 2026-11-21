@@ -87,6 +87,8 @@ each; every range edge (`00`, `23`, `24`); each part missing or malformed; the w
 lookalike from another script; and the empty string. Texts in one row must differ, or the
 generated test names collide. A pattern that ends looking ahead at a character it doesn't take
 (`folded_line_break`) can never match whole: its row has no matches, and its section tests it in text.
+A pattern that must end its line (`markdown_code_block`) is found between line feeds rather than
+`AROUND`: its row ends with `{ around: "\n" }`.
 
 Beside the table, a section tests each named capture (one test per capture) and, for a pattern with
 token boundaries, that a search never finds it inside a longer run.

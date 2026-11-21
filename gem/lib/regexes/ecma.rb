@@ -36,7 +36,6 @@ module Regexes
       'H' => "Ruby's non-hex digit (\\H)",
       'G' => 'the end of the last match (\G)',
       'K' => 'a match reset (\K)',
-      'k' => 'a named back-reference (\k)',
       'g' => 'a subexpression call (\g)'
     }.freeze
     # Group openings both write alike.
@@ -47,6 +46,8 @@ module Regexes
     QUANTIFIER     = /\A\{[0-9]+(?:,[0-9]*)?\}/
     # A Unicode escape: four hex digits, or any number in braces.
     UNICODE_ESCAPE = /\A\\u(?:[0-9a-fA-F]{4}|\{[0-9a-fA-F]+\})/
+    # A back-reference to a named capture, which ECMAScript writes as Ruby does.
+    BACK_REFERENCE = /\A\\k<[A-Za-z_][A-Za-z0-9_]*>/
 
     # @param expression [Expression] an expression
     # @return [String] its source as ECMAScript writes it
@@ -122,11 +123,24 @@ module Regexes
       def escape
         letter = @ruby[@at + 1]
         untranslatable(UNTRANSLATABLE.fetch(letter)) if UNTRANSLATABLE.key?(letter)
-        return property if %w[p P].include?(letter)
-        return copy(UNICODE_ESCAPE) if letter == 'u'
-        return put(@ruby[@at, 4], 4) if letter == 'x'
 
-        put(escaped(letter), 2)
+        case letter
+        when 'p', 'P' then property
+        when 'u' then copy(UNICODE_ESCAPE)
+        when 'k' then back_reference
+        when 'x' then put(@ruby[@at, 4], 4)
+        else put(escaped(letter), 2)
+        end
+      end
+
+      # Copies a back-reference to a named capture, which ECMAScript writes alike.
+      #
+      # @return [void]
+      # @raise [UntranslatableError] when it refers to a capture by number
+      def back_reference
+        untranslatable('a back-reference by number (\k<1>)') unless BACK_REFERENCE.match?(@ruby[@at..])
+
+        copy(BACK_REFERENCE)
       end
 
       # @param letter [String] the character after a backslash

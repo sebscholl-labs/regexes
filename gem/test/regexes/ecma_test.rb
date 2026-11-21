@@ -43,6 +43,14 @@ class RegexesEcmaTest < RegexesTestCase
     end
   end
 
+  test 'a named back-reference is kept as it is' do
+    assert_equal '(?:(?<fence>`+)a\k<fence>)', Regexes.register(:ecma_back_reference, '(?<fence>`+)a\k<fence>').ecma_source
+  end
+
+  test 'a back-reference by number is refused' do
+    assert_raises(Regexes::UntranslatableError) { Regexes.register(:ecma_numbered, '(a)\k<1>').ecma_source }
+  end
+
   test 'a Unicode escape in braces is kept whole' do
     assert_equal '(?:\u{1F44D})', Regexes.register(:ecma_unicode, '\u{1F44D}').ecma_source
   end

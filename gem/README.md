@@ -51,7 +51,7 @@ Regexes.uuid.whole.match?('01890a5d-ac96-774b-bcce-b302099a8057')  # => true
 | Network | `uri_scheme` `http_scheme` `http_url` `dns_label` `domain_name` `ipv4_address` `ipv6_address` `ip_address` `ipv4_cidr` `ipv6_cidr` `mac_address` |
 | Mail | `email_address` `message_id` `header_field_name` `folded_line_break` `unfolded_line_break` |
 | Codes | `e164_phone_number` `iban` `bic` `language_tag` `hex_color` |
-| Text | `markdown_code_span` `markdown_link` `ruby_format_reference` `mustache_tag` `shell_variable_reference` `file_extension` `emoji` |
+| Text | `markdown_code_span` `markdown_code_block` `markdown_link` `ruby_format_reference` `mustache_tag` `shell_variable_reference` `file_extension` `emoji` |
 
 Each checks shape, never meaning (no checksums, no calendar), and one made of a fixed count of digits or
 letters never matches inside a longer run, so searching text finds whole values. Codes that are only a set and
