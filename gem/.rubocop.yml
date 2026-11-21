@@ -2,6 +2,13 @@ plugins:
   - rubocop-minitest
   - rubocop-yard
 
+# Project cops (rubocop/cop/regexes/). See .claude/rules/.
+require:
+  - ./rubocop/cop/regexes/one_assertion_per_test
+  - ./rubocop/cop/regexes/one_test_class_per_file
+  - ./rubocop/cop/regexes/mirrored_test_path
+  - ./rubocop/cop/regexes/pattern_naming
+
 AllCops:
   TargetRubyVersion: 4.0
   NewCops: enable
@@ -52,6 +59,32 @@ Style/DocumentationMethod:
 YARD/CollectionStyle:
   EnforcedStyle: long
 
-# One assertion per test.
+# Regexes/OneAssertionPerTest replaces it: it also sees the suite's `test '…' do` blocks and define_method.
 Minitest/MultipleAssertions:
-  Max: 1
+  Enabled: false
+
+# ── Project cops (rubocop/cop/regexes/). See .claude/rules/tests.md and .claude/rules/patterns.md. ──────────
+
+Regexes/OneAssertionPerTest:
+  Enabled: true
+  Include:
+    - 'test/**/*_test.rb'
+
+Regexes/OneTestClassPerFile:
+  Enabled: true
+  Include:
+    - 'test/**/*_test.rb'
+
+Regexes/MirroredTestPath:
+  Enabled: true
+  Include:
+    - 'test/**/*_test.rb'
+  # These directories don't mirror lib/ (see .claude/rules/tests.md).
+  Exclude:
+    - 'test/support/**/*'
+    - 'test/properties/**/*'
+
+Regexes/PatternNaming:
+  Enabled: true
+  Include:
+    - 'lib/**/*.rb'

@@ -22,7 +22,7 @@ From `gem/`, matching CI (`.github/workflows/ci.yml`):
 bundle exec rake test     # Minitest
 bundle exec rake lint     # RuboCop; must be clean
 bundle exec rake          # both
-bundle exec ruby -Ilib:test test/expression_test.rb   # one file
+bundle exec ruby -Ilib:test test/regexes/expression_test.rb   # one file
 ```
 
 From `site/`: `npm install && npm run build`.
@@ -58,6 +58,11 @@ pattern that fits none of them is a sign it doesn't belong here.
 
 ## Rules that shape the code
 
+Detailed rules live in `.claude/rules/` and load when you touch the files they cover: `patterns.md`
+(where a pattern goes, its shape, keeping tests and docs in step) and `tests.md` (one test class
+per file, test paths mirror `lib/`, one assertion per test, what a case table covers). The project
+cops in `gem/rubocop/cop/regexes/` enforce what a machine can check of both.
+
 - **Everything is frozen and built once.** Named patterns are constants built at load time; each
   variation returns a new frozen `Expression` and never changes the receiver.
 - **Anchors are the text's, never a line's:** `\A` and `\z`, never `^` or `$`.
@@ -65,8 +70,6 @@ pattern that fits none of them is a sign it doesn't belong here.
   that means any script's spaces.
 - **Every named pattern is tested** in `gem/test/regexes_test.rb`'s `CASES` table, with texts it must
   match whole and texts it must refuse. A test there fails if a named pattern is missing from it.
-- **One assertion per test** (`Minitest/MultipleAssertions: Max: 1`). Tests are declared with
-  `test 'what it does' do` from `gem/test/test_helper.rb`, which refuses a duplicate name.
 - **Ruby 4.0 is the floor** (`required_ruby_version`, RuboCop's `TargetRubyVersion`, CI).
 - **YARD on every method**, public and private (`Style/DocumentationMethod`).
 - When public behavior changes, update `gem/README.md` and the relevant `site/` page.
