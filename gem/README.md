@@ -10,8 +10,10 @@
 [![License](https://img.shields.io/github/license/sebscholl-labs/regexes)](https://github.com/sebscholl-labs/regexes/blob/main/LICENSE.txt)
 [![Ruby](https://img.shields.io/badge/Ruby-%3E%3D%204.0-red)](https://rubygems.org/gems/regexes)
 
-Regular expressions named for what they match, each with the variations it allows. Every pattern is a
-frozen `Regexp`, so it goes anywhere a Regexp does: `gsub`, `match?`, `scan`, `case`, `validates format:`.
+**The regex you need, already written.** Patterns named for what they match — UUIDs, IP addresses,
+ISO 8601 times, IBANs — each a frozen `Regexp` that chains anchors, repetition and captures, tested against
+Ruby's own parsers, and runs the same in JavaScript. Every pattern goes anywhere a Regexp does: `gsub`,
+`match?`, `scan`, `case`, `validates format:`.
 
 Full documentation: <https://sebscholl-labs.github.io/regexes/>
 
@@ -32,11 +34,23 @@ gem install regexes
 ```ruby
 require 'regexes'
 
-Regexes.lowercase_alphanumeric.excluded.one_or_more        # => /[^a-z0-9]+/
-Regexes.lowercase_letters.excluded.one_or_more.leading     # => /\A[^a-z]+/
-Regexes.uuid.whole.match?('01890a5d-ac96-774b-bcce-b302099a8057')  # => true
+# Search finds whole values: the usual IPv4 regex finds 1.2.3.456 here.
+'Retry 10.0.0.1, not 1.2.3.456'.scan(Regexes.ipv4_address)   # => ["10.0.0.1"]
 
-'northwind  erp!!'.gsub(Regexes.lowercase_alphanumeric.excluded.one_or_more, '_')  # => "northwind_erp_"
+# Validate with .whole: \A and \z, never Ruby's line anchors ^ and $.
+Regexes.lowercase_letters.one_or_more.whole.match?("ok\nevil")  # => false
+
+# Every form IPv6 writes, and every field range ISO 8601 defines.
+Regexes.ipv6_address.whole.match?('::ffff:192.0.2.1')            # => true
+Regexes.iso8601_date_time.whole.match?('2026-13-21T25:61')       # => false
+
+# Parts come back by name, in the standard's terms.
+Regexes.semantic_version.match('2.1.3-rc.1+sha.5114f85')[:build]  # => "sha.5114f85"
+Regexes.http_url.match('http://[::1]:8080/a?b=c#d')[:host]        # => "[::1]"
+
+# Patterns chain, and compose into your own.
+Regexes.digits.excluded.one_or_more                               # => /[^0-9]+/
+Regexes.sequence(Regexes.lowercase_letters, Regexes.word_characters.between(0, 23)).whole
 ```
 
 ## Named patterns
@@ -93,7 +107,8 @@ Regexes.literal('.ns.cloudflare.com').trailing   # dots that mean dots
 
 ## In JavaScript and JSON Schema
 
-Every pattern translates into ECMAScript, for the browser, a mobile app or a JSON Schema `pattern`:
+Every pattern but `emoji` translates into ECMAScript, for the browser, a mobile app or a JSON Schema
+`pattern`:
 
 ```ruby
 Regexes.uuid.whole.ecma_source   # => "^(?<![0-9a-fA-F])[0-9a-fA-F]{8}-…$"

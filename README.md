@@ -6,14 +6,23 @@
 [![License](https://img.shields.io/github/license/sebscholl-labs/regexes)](https://github.com/sebscholl-labs/regexes/blob/main/LICENSE.txt)
 [![Ruby](https://img.shields.io/badge/Ruby-%3E%3D%204.0-red)](https://rubygems.org/gems/regexes)
 
-`regexes` is a Ruby library of regular expressions named for what they match rather than what they are
-used for: sets of characters, line breaks, UUIDs, ISO 8601 times, domain names, email addresses. Each is a
-frozen `Regexp` that chains the variations every expression allows (anchored, repeated, case-insensitive)
-and composes with others into larger patterns. No dependencies.
+**The regex you need, already written.** Patterns named for what they match — UUIDs, IP addresses,
+ISO 8601 times, IBANs — each a frozen `Regexp` that chains anchors, repetition and captures, tested against
+Ruby's own parsers, and runs the same in JavaScript. No dependencies.
 
 ```ruby
-Regexes.lowercase_alphanumeric.excluded.one_or_more   # => /[^a-z0-9]+/
+log = 'Retry 10.0.0.1, not 1.2.3.456'
+
+log.scan(/\d{1,3}(?:\.\d{1,3}){3}/)   # => ["10.0.0.1", "1.2.3.456"]
+log.scan(Regexes.ipv4_address)         # => ["10.0.0.1"]
+
+"ok\nevil".match?(/^[a-z]+$/)                                  # => true: ^ and $ are line anchors in Ruby
+Regexes.lowercase_letters.one_or_more.whole.match?("ok\nevil")  # => false
+
+Regexes.semantic_version.match('2.1.3-rc.1+sha.5114f85')[:prerelease]  # => "rc.1"
 ```
+
+Documentation: <https://sebscholl-labs.github.io/regexes/> · Install and use: [`gem/README.md`](./gem/README.md)
 
 ## Repository layout
 
