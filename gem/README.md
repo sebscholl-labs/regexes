@@ -57,10 +57,13 @@ one you need can be guessed.
 
 Every pattern chains these. Each returns a new frozen pattern and leaves the original as it was.
 
-- **Anchors:** `leading` (`\A`), `trailing` (`\z`), `whole` (both). They anchor to the text, never a line.
+- **Anchors:** `leading` (`\A`), `trailing` (`\z`), `whole` (both) anchor to the text, never a line.
+  `line_leading`, `line_trailing` and `whole_line` anchor to a line, ended by `\r\n`, `\r` or `\n`.
 - **Repetition:** `one_or_more`, `zero_or_more`, `optional`, `exactly(n)`, `at_least(n)`, `between(min, max)`.
   Repeating a multi-part pattern groups it first, so `ab` repeated is `abab`. Repeat before anchoring.
 - **Case:** `case_insensitive`.
+- **Captures:** `captured(:name)`, read back with `match[:name]`.
+- **Lookarounds:** `followed_by(other)`, `not_followed_by(other)`, `preceded_by(other)`, `not_preceded_by(other)`.
 - **Sets only:** `excluded` (`[^…]`) and `including(characters)`.
 
 ## Composition
@@ -72,7 +75,26 @@ ends   = Regexes.either(Regexes.hyphen.one_or_more.leading, Regexes.hyphen.one_o
 '--acme-mail-'.gsub(ends, '')  # => "acme-mail"
 ```
 
-A case-insensitive part stays case-insensitive inside a case-sensitive sequence.
+A case-insensitive part stays case-insensitive inside a case-sensitive sequence. `Regexes.literal(text)`
+matches text character for character, the safe way to put a value into a pattern:
+
+```ruby
+Regexes.literal('.ns.cloudflare.com').trailing   # dots that mean dots
+```
+
+## Your own patterns
+
+Register a shape of your application's and it's named, varied and composed like the built-in ones:
+
+```ruby
+Regexes.register(:order_reference, /ORD-[0-9]{6}/)
+
+Regexes.order_reference.whole.match?('ORD-004211')  # => true
+Regexes.registered                                   # => [:order_reference]
+```
+
+Register the shape unanchored, under a snake_case name nothing else uses; anything else raises
+`ArgumentError`.
 
 ## Development
 

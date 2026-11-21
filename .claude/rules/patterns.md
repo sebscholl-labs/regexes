@@ -36,6 +36,8 @@ that returns it. `Regexes/PatternNaming` enforces the name and the shape:
 - **Build from what exists.** A pattern made of others interpolates their `source`
   (`ISO8601_DATE_TIME` is built from `ISO8601_DATE`, `ISO8601_TIME` and `UTC_OFFSET`), so a fix to
   one reaches all.
+- **No alternation at the top of the body.** Wrap alternatives in `(?:…)` and pass `single: true`,
+  so the body can be followed, preceded or put in a sequence as it is (`UTC_OFFSET`, `LINE_BREAK`).
 - **No anchors in the body.** `\A`, `\z`, `^` and `$` are the caller's, through `.leading`,
   `.trailing` and `.whole`. A lookahead that bounds a length (as `DOMAIN_NAME`'s does) is fine.
 - **The doc comment** opens with an example in `+…+` of what it matches and what it refuses, says

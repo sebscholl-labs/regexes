@@ -29,6 +29,16 @@ same object each time it's asked for.
 `leading`, `trailing` and `whole` write `\A` and `\z`. `^` and `$` match at any line, so a validation
 written with them passes `"ok\n<script>"`. There is no method that writes them.
 
+When a line is what's meant, `line_leading`, `line_trailing` and `whole_line` say so in their names, and
+they're written with lookarounds that know all three line breaks. `$` alone ends a line between the `\r`
+and the `\n` of a CRLF — the line break mail and HTTP use — and `^` never starts one after a lone `\r`.
+
+## Registered patterns are shapes, unanchored
+
+`Regexes.register` refuses a pattern with an anchor in it. One unanchored shape serves validation
+(`.whole`), search (as it is) and parsing (`.leading`); an anchored one serves only the first, and gets
+copied again, unanchored, the next time someone needs to search.
+
 ## Repeat, then anchor
 
 Repeating an anchored expression is refused rather than guessed at: only one stretch of text can

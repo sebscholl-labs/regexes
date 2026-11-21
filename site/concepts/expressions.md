@@ -32,8 +32,30 @@ pattern, and `$` passes over a final newline:
 "ab\n"[Regexes.lowercase_letters.one_or_more.trailing]  # => nil
 ```
 
-`leading.trailing` is the same as `whole`, and anchoring twice at one end is anchoring once.
-`leading?` and `trailing?` say where an expression is anchored.
+`leading.trailing` is the same as `whole`. Each end holds one anchor, so anchoring an end again
+replaces its anchor, and anchoring twice the same way is anchoring once. `leading?` and `trailing?` say
+where an expression is anchored.
+
+## Line anchors
+
+When the text has lines — a mail header block, a Markdown document, a log — anchor to a line instead:
+
+| Method | Matches |
+|---|---|
+| `line_leading` | only at the start of a line |
+| `line_trailing` | only at the end of a line |
+| `whole_line` | a whole line |
+
+```ruby
+"ab1\r\ncd2\nef".scan(Regexes.lowercase_letters.one_or_more.line_leading)  # => ["ab", "cd", "ef"]
+"ab1\r\ncd2".scan(Regexes.digits.one_or_more.line_trailing)              # => ["1", "2"]
+"ab1\ncd\n2ef".scan(Regexes.lowercase_letters.one_or_more.whole_line)     # => ["cd"]
+```
+
+A line ends in `\r\n`, `\r` or `\n` — the three breaks [`line_break`](/reference/patterns#characters-and-breaks)
+matches — and `\r\n` is one break, never two. That's where these differ from `^` and `$`, which know only
+`\n`: `$` ends a line between the `\r` and the `\n`, and `^` never starts one after a lone `\r`.
+`line_leading?` and `line_trailing?` say where an expression is anchored to a line.
 
 ## Repetition
 
@@ -60,8 +82,8 @@ Regexes.sequence(Regexes.letters, Regexes.letters).at_least(2)
 # => /(?:[A-Za-z][A-Za-z]){2,}/
 ```
 
-An anchored expression can't be repeated, since only one stretch of the text can start it.
-Repeat first, then anchor:
+An anchored expression — to the text or to a line — can't be repeated, since only one stretch can
+start it. Repeat first, then anchor:
 
 ```ruby
 Regexes.lowercase_letters.leading.one_or_more
@@ -79,5 +101,46 @@ Regexes.http_scheme.leading.case_insensitive.match?('HTTPS://acme.example')  # =
 ```
 
 Applying it before or after repeating and anchoring gives the same expression.
+
+## Captures
+
+`captured(name)` captures what the expression matches under a name, read back with `match[name]`:
+
+```ruby
+date = Regexes.sequence(Regexes.digits.exactly(4).captured(:year), Regexes.hyphen,
+                        Regexes.digits.exactly(2).captured(:month))
+
+date.match('2026-11')[:month]  # => "11"
+```
+
+Anchors stay outside the capture, so it holds only the text matched. A captured expression is one unit:
+repeating it repeats the capture without another group around it. A name is a letter or underscore, then
+letters, digits and underscores; anything else raises `ArgumentError`.
+
+## Lookarounds
+
+Four variations match only where something else does or doesn't come right before or after, without
+taking it:
+
+| Method | Writes | Matches only where `other` |
+|---|---|---|
+| `followed_by(other)` | `…(?=other)` | comes next |
+| `not_followed_by(other)` | `…(?!other)` | doesn't come next |
+| `preceded_by(other)` | `(?<=other)…` | comes before |
+| `not_preceded_by(other)` | `(?<!other)…` | doesn't come before |
+
+```ruby
+"a\n b\nc".gsub(Regexes.newline.followed_by(Regexes.space_or_tab), '')       # => "a b\nc"
+'https:// http://'.scan(Regexes.literal('http').not_followed_by(Regexes.literal('s')))  # => ["http"]
+'$5 6'.scan(Regexes.digits.one_or_more.preceded_by(Regexes.literal('$')))   # => ["5"]
+```
+
+Two things to know:
+
+- **A repeated expression gives back what it took until the lookaround passes.** `digits.one_or_more`
+  not followed by `%` still matches the `5` of `50%`. Exclude what it repeats as well —
+  `not_followed_by(Regexes.either(Regexes.digits, Regexes.literal('%')))` — to refuse the whole run.
+- **Ruby looks behind only for what has a known length** (or alternatives each of one). `preceded_by` a
+  repeated expression raises `RegexpError`.
 
 Next: [Sets of Characters](/concepts/character-sets).

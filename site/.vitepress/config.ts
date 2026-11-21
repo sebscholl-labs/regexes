@@ -15,6 +15,7 @@ export default defineConfig({
     nav: [
       { text: 'Quick Start', link: '/getting-started/' },
       { text: 'Concepts', link: '/concepts/expressions' },
+      { text: 'Guides', link: '/guides/your-own-patterns' },
       { text: 'Patterns', link: '/reference/patterns' },
       { text: 'Design', link: '/design/decisions' },
     ],
@@ -33,6 +34,10 @@ export default defineConfig({
           { text: 'Sets of Characters', link: '/concepts/character-sets' },
           { text: 'Composition', link: '/concepts/composition' },
         ],
+      },
+      {
+        text: 'Guides',
+        items: [{ text: 'Your Own Patterns', link: '/guides/your-own-patterns' }],
       },
       {
         text: 'Reference',

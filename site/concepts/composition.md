@@ -30,6 +30,19 @@ digit_or_letter = Regexes.either(Regexes.digits, Regexes.letters).whole
 %w[1 a 1a].map { digit_or_letter.match?(it) }  # => [true, true, false]
 ```
 
+## `Regexes.literal(text)`
+
+Text matched character for character, every character standing for itself:
+
+```ruby
+Regexes.literal('b+')                                   # => /b\+/
+Regexes.literal('.ns.cloudflare.com').trailing          # a Cloudflare nameserver, dots and all
+```
+
+It's the safe way to put a value into a pattern. Interpolating one (`/#{suffix}\z/`) lets its dots, pluses
+and brackets match more than they say; a literal can't. An empty literal raises `ArgumentError`, since it
+would match everywhere.
+
 ## Options travel with their part
 
 A case-insensitive part stays case-insensitive inside a case-sensitive whole. It is embedded with its

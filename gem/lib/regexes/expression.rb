@@ -1,30 +1,51 @@
 # frozen_string_literal: true
 
 module Regexes
-  # A regular expression with the variations every expression allows: anchored at the start of the text, at
-  # its end, or both ({#leading}, {#trailing}, {#whole}); repeated ({#one_or_more}, {#zero_or_more},
-  # {#optional}, {#exactly}, {#at_least}, {#between}); and matching letters of either case
-  # ({#case_insensitive}). It is a +Regexp+, so it goes wherever one does (+gsub+, +match?+, +case+,
-  # +validates format:+) as it is.
+  # A regular expression with the variations every expression allows: anchored at the start or end of the text
+  # ({#leading}, {#trailing}, {#whole}) or of a line ({#line_leading}, {#line_trailing}, {#whole_line});
+  # repeated ({#one_or_more}, {#zero_or_more}, {#optional}, {#exactly}, {#at_least}, {#between}); matching
+  # letters of either case ({#case_insensitive}); captured under a name ({#captured}); and matching only where
+  # something else does or doesn't come before or after it ({#followed_by}, {#not_followed_by},
+  # {#preceded_by}, {#not_preceded_by}). It is a +Regexp+, so it goes wherever one does (+gsub+, +match?+,
+  # +case+, +validates format:+) as it is.
   #
   # Each variation is a new expression, frozen like the one it came from, so a pattern kept in a constant is
-  # never changed by a caller. Anchoring twice at the same end is the same as anchoring once.
+  # never changed by a caller. Each end has at most one anchor: anchoring an end again replaces its anchor, so
+  # anchoring twice the same way is anchoring once.
   #
   # Repeating an expression repeats all of it: one that is more than a single unit is grouped first
   # (+(?:ab)++), so +ab+ repeated is +abab+, never +abb+. An anchored expression cannot be repeated, since only
-  # one stretch of the text starts it; anchor after repeating.
+  # one stretch of the text (or of a line) starts it; anchor after repeating.
+  #
+  # A body never holds an alternation at its top level: one is wrapped in +(?:…)+ and built with +single: true+,
+  # so a body can be followed, preceded or placed in a sequence as it is.
   class Expression < Regexp
+    # What each kind of anchor writes at the start. A line starts at the start of the text, after a line feed,
+    # and after a carriage return that no line feed follows, so +\r\n+, +\r+ and +\n+ each end one line.
+    STARTS       = {
+      text: '\A',
+      line: '(?:\A|(?<=\n)|(?<=\r)(?!\n))'
+    }.freeze
+    # What each kind of anchor writes at the end. A line ends at the end of the text, before a carriage return,
+    # and before a line feed that no carriage return comes before.
+    ENDS         = {
+      text: '\z',
+      line: '(?:(?=\r|\z)|(?<!\r)(?=\n))'
+    }.freeze
+    # What a capture's name may be: what Ruby allows as one, and what +MatchData#[]+ reads by.
+    CAPTURE_NAME = /\A[A-Za-z_][A-Za-z0-9_]*\z/
+
     # @param body [String] the expression's source, without anchors
-    # @param leading [Boolean] whether it must match at the start of the text
-    # @param trailing [Boolean] whether it must match at the end of the text
+    # @param start [Symbol, nil] where it must match from: +:text+ (the text's start), +:line+ (a line's) or nil
+    # @param finish [Symbol, nil] where it must match to: +:text+ (the text's end), +:line+ (a line's) or nil
     # @param single [Boolean] whether the body is one unit a quantifier applies to whole: a set, or a group
     # @param options [Integer] +Regexp+ options, such as +Regexp::IGNORECASE+
-    def initialize(body, leading: false, trailing: false, single: false, options: 0)
-      @body     = body
-      @leading  = leading
-      @trailing = trailing
-      @single   = single
-      super("#{'\A' if leading}#{body}#{'\z' if trailing}", options)
+    def initialize(body, start: nil, finish: nil, single: false, options: 0)
+      @body   = body
+      @start  = start
+      @finish = finish
+      @single = single
+      super("#{STARTS.fetch(start) if start}#{body}#{ENDS.fetch(finish) if finish}", options)
       freeze
     end
 
@@ -34,24 +55,48 @@ module Regexes
     # start is the text's (+\A+), never a line's (+^+), so a later line cannot satisfy it.
     #
     # @return [Expression] the expression, matching only at the start of the text
-    def leading = varied(leading: true)
+    def leading = varied(start: :text)
 
     # +Regexes.lowercase_letters.one_or_more.trailing+ matches the +cd+ of +1cd+, never the +ab+ of +ab1+.
     # The end is the text's (+\z+), never a line's (+$+), so a final newline is not passed over.
     #
     # @return [Expression] the expression, matching only at the end of the text
-    def trailing = varied(trailing: true)
+    def trailing = varied(finish: :text)
 
     # +Regexes.lowercase_letters.one_or_more.whole+ matches +abc+, never +abc1+.
     #
     # @return [Expression] the expression, matching only the whole of the text
-    def whole = varied(leading: true, trailing: true)
+    def whole = varied(start: :text, finish: :text)
+
+    # +Regexes.lowercase_letters.one_or_more.line_leading+ finds +ab+ and +cd+ in +"ab1\r\ncd2"+: the start of
+    # each line, whether lines end in +\r\n+, +\r+ or +\n+. Unlike +^+, it never finds a line between the
+    # +\r+ and the +\n+ of one line break.
+    #
+    # @return [Expression] the expression, matching only at the start of a line
+    def line_leading = varied(start: :line)
+
+    # +Regexes.digits.one_or_more.line_trailing+ finds +1+ and +2+ in +"ab1\r\ncd2"+: the end of each line.
+    # Unlike +$+, it ends a line before a +\r\n+ or a lone +\r+, never only before a +\n+.
+    #
+    # @return [Expression] the expression, matching only at the end of a line
+    def line_trailing = varied(finish: :line)
+
+    # +Regexes.lowercase_letters.one_or_more.whole_line+ finds +cd+ in +"ab1\ncd"+, never +ab+.
+    #
+    # @return [Expression] the expression, matching only a whole line
+    def whole_line = varied(start: :line, finish: :line)
 
     # @return [Boolean] whether it matches only at the start of the text
-    def leading? = @leading
+    def leading? = @start == :text
 
     # @return [Boolean] whether it matches only at the end of the text
-    def trailing? = @trailing
+    def trailing? = @finish == :text
+
+    # @return [Boolean] whether it matches only at the start of a line
+    def line_leading? = @start == :line
+
+    # @return [Boolean] whether it matches only at the end of a line
+    def line_trailing? = @finish == :line
 
     # ── Repetition ──────────────────────────────────────────────────────────────────────────────────────────
 
@@ -95,6 +140,58 @@ module Regexes
     # @return [Expression] the expression, matching letters of either case
     def case_insensitive = varied(options: options | IGNORECASE)
 
+    # ── Captures ────────────────────────────────────────────────────────────────────────────────────────────
+
+    # +Regexes.digits.one_or_more.captured(:year)+ matches what it did, and +match[:year]+ reads it. Anchors
+    # stay outside the capture, so it holds only the text matched.
+    #
+    # @param name [Symbol, String] the capture's name: a letter or underscore, then letters, digits and
+    #   underscores
+    # @return [Expression] the expression, its match captured under +name+
+    # @raise [ArgumentError] when +name+ can't name a capture
+    def captured(name)
+      raise ArgumentError, "#{name.inspect} can't name a capture: use letters, digits and _" unless
+        CAPTURE_NAME.match?(name.to_s)
+
+      Expression.new("(?<#{name}>#{@body})", start: @start, finish: @finish, single: true, options:)
+    end
+
+    # ── Lookarounds ─────────────────────────────────────────────────────────────────────────────────────────
+
+    # +Regexes.newline.followed_by(Regexes.space_or_tab)+ matches a line feed that a space or tab comes after,
+    # and takes only the line feed.
+    #
+    # @param other [Expression] what must come right after it
+    # @return [Expression] the expression, matching only where +other+ comes next, which it doesn't take
+    def followed_by(other) = looking("#{@body}(?=#{other.embedded})")
+
+    # +Regexes.literal('http').not_followed_by(Regexes.literal('s'))+ matches the +http+ of +http://+, never of
+    # +https://+.
+    #
+    # A repeated expression gives back what it took until the lookaround passes: +digits.one_or_more+ not followed
+    # by +%+ still matches the +5+ of +50%+. Exclude what it repeats too
+    # (+not_followed_by(Regexes.either(Regexes.digits, Regexes.literal('%')))+) to refuse the whole run.
+    #
+    # @param other [Expression] what must not come right after it
+    # @return [Expression] the expression, matching only where +other+ doesn't come next
+    def not_followed_by(other) = looking("#{@body}(?!#{other.embedded})")
+
+    # +Regexes.digits.one_or_more.preceded_by(Regexes.literal('$'))+ matches the +5+ of +$5+, and takes only
+    # the digits. Ruby allows only what has a known length, or alternatives each of one, before a match.
+    #
+    # @param other [Expression] what must come right before it
+    # @return [Expression] the expression, matching only where +other+ comes before, which it doesn't take
+    # @raise [RegexpError] when +other+ can match texts of different lengths in a way Ruby can't look behind
+    def preceded_by(other) = looking("(?<=#{other.embedded})#{@body}")
+
+    # +Regexes.lowercase_letters.one_or_more.not_preceded_by(Regexes.literal('@'))+ matches the +ada+ of
+    # +ada+, never the +acme+ of +@acme+.
+    #
+    # @param other [Expression] what must not come right before it
+    # @return [Expression] the expression, matching only where +other+ doesn't come before
+    # @raise [RegexpError] when +other+ can match texts of different lengths in a way Ruby can't look behind
+    def not_preceded_by(other) = looking("(?<!#{other.embedded})#{@body}")
+
     # ── Composition ─────────────────────────────────────────────────────────────────────────────────────────
 
     # The expression as a part of a larger one ({Regexes.sequence}, {Regexes.either}): its source as it is
@@ -115,18 +212,22 @@ module Regexes
     # @return [Expression] this expression with the changes
     def varied(**changes)
       Expression.new(@body,
-                     leading:  @leading,
-                     trailing: @trailing,
-                     single:   @single,
+                     start:   @start,
+                     finish:  @finish,
+                     single:  @single,
                      options:,
                      **changes)
     end
+
+    # @param body [String] the body with a lookaround before or after it
+    # @return [Expression] an expression of that body, anchored as this one is
+    def looking(body) = Expression.new(body, start: @start, finish: @finish, options:)
 
     # @param quantifier [String] the quantifier, as written after a unit
     # @return [Expression] the expression repeated
     # @raise [ArgumentError] when it is anchored
     def repeated(quantifier)
-      raise ArgumentError, "#{inspect} is anchored: repeat it first, then anchor it" if @leading || @trailing
+      raise ArgumentError, "#{inspect} is anchored: repeat it first, then anchor it" if @start || @finish
 
       Expression.new("#{unit}#{quantifier}", options:)
     end

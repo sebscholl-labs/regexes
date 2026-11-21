@@ -10,6 +10,13 @@
   patterns: sets of characters, line breaks, integers, UUIDs, identifiers, UTC offsets, ISO 8601 times,
   HTTP schemes, DNS labels, domain names, email addresses and Markdown code spans.
 - `Regexes.iso8601_date` and `Regexes.iso8601_time` (the time of day), of which `iso8601_date_time` is built.
+- Line anchors: `Expression#line_leading`, `#line_trailing` and `#whole_line`, which know `\r\n`, `\r` and
+  `\n` as line breaks, and `#line_leading?` / `#line_trailing?`.
+- `Expression#captured(name)`, a named capture around an expression.
+- Lookarounds: `Expression#followed_by`, `#not_followed_by`, `#preceded_by` and `#not_preceded_by`.
+- `Regexes.literal(text)`, text matched character for character.
+- `Regexes.register(name, pattern)` adds an application's own pattern under a name, as a frozen expression with
+  every variation; `Regexes.registered` lists the names added.
 
 ### Changed
 

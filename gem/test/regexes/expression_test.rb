@@ -126,4 +126,175 @@ class RegexesExpressionTest < RegexesTestCase
 
     assert_equal '[a-z]+', repeated.source
   end
+
+  test 'anchoring an end again replaces its anchor' do
+    assert_equal Regexes.digits.whole_line.leading, Regexes.digits.leading.line_trailing
+  end
+
+  # ── Line anchors ────────────────────────────────────────────────────────────────────────────────────────
+
+  test 'line leading finds the start of every line' do
+    assert_equal %w[ab cd ef], "ab1\ncd2\nef".scan(Regexes.lowercase_letters.one_or_more.line_leading)
+  end
+
+  test 'line leading treats CRLF as one line break' do
+    assert_equal %w[ab cd], "ab1\r\ncd2".scan(Regexes.lowercase_letters.one_or_more.line_leading)
+  end
+
+  test 'line leading treats a lone carriage return as a line break' do
+    assert_equal %w[ab cd], "ab1\rcd2".scan(Regexes.lowercase_letters.one_or_more.line_leading)
+  end
+
+  test 'line leading never starts a line between the CR and the LF of one break' do
+    assert_equal ['', ''], "a\r\nb".scan(Regexes.newline.zero_or_more.line_leading)
+  end
+
+  test 'line leading matches at the start of the text' do
+    assert_equal 'ab', 'ab1'[Regexes.lowercase_letters.one_or_more.line_leading]
+  end
+
+  test 'line leading refuses the middle of a line' do
+    assert_nil '1ab'[Regexes.lowercase_letters.one_or_more.line_leading]
+  end
+
+  test 'line trailing finds the end of every line' do
+    assert_equal %w[1 2 3], "ab1\ncd2\nef3".scan(Regexes.digits.one_or_more.line_trailing)
+  end
+
+  test 'line trailing ends a line before a CRLF' do
+    assert_equal %w[1 2], "ab1\r\ncd2".scan(Regexes.digits.one_or_more.line_trailing)
+  end
+
+  test 'line trailing ends a line before a lone carriage return' do
+    assert_equal %w[1 2], "ab1\rcd2".scan(Regexes.digits.one_or_more.line_trailing)
+  end
+
+  test 'line trailing never ends a line between the CR and the LF of one break' do
+    assert_equal 'ab', "ab\r\n"[Regexes.lowercase_letters.including('\r').one_or_more.line_trailing.leading]
+  end
+
+  test 'line trailing matches at the end of the text' do
+    assert_equal '1', 'ab1'[Regexes.digits.one_or_more.line_trailing]
+  end
+
+  test 'whole line matches only a line with nothing else on it' do
+    assert_equal %w[cd], "ab1\ncd\n2ef".scan(Regexes.lowercase_letters.one_or_more.whole_line)
+  end
+
+  test 'whole line matches a text of one line' do
+    assert_match Regexes.lowercase_letters.one_or_more.whole_line, 'abc'
+  end
+
+  test 'says where it is anchored to a line' do
+    line = Regexes.digits.line_leading
+
+    assert_equal [true, false, false, false], [line.line_leading?, line.line_trailing?, line.leading?, line.trailing?]
+  end
+
+  test 'a whole line is anchored to a line at both ends' do
+    line = Regexes.digits.whole_line
+
+    assert_equal [true, true], [line.line_leading?, line.line_trailing?]
+  end
+
+  test 'repeating an expression anchored to a line is refused' do
+    assert_raises(ArgumentError, match: /repeat it first/) { Regexes.digits.line_leading.one_or_more }
+  end
+
+  # ── Captures ────────────────────────────────────────────────────────────────────────────────────────────
+
+  test 'captured reads what it matched by name' do
+    assert_equal '2026', Regexes.digits.exactly(4).captured(:year).match('in 2026')[:year]
+  end
+
+  test 'captured takes a string name too' do
+    assert_equal '2026', Regexes.digits.exactly(4).captured('year').match('in 2026')[:year]
+  end
+
+  test 'captured matches what the expression did' do
+    assert_equal %w[12 34], '12 34'.scan(Regexes.digits.one_or_more.captured(:number)).flatten
+  end
+
+  test 'captured keeps anchors outside the capture' do
+    assert_equal '\A(?<year>[0-9]{4})\z', Regexes.digits.exactly(4).whole.captured(:year).source
+  end
+
+  test 'captured keeps the case-insensitive option' do
+    assert_equal 'ABC', Regexes.lowercase_letters.one_or_more.case_insensitive.captured(:word).match('ABC')[:word]
+  end
+
+  test 'a captured expression is one unit, repeated without another group' do
+    assert_equal '(?<pair>[0-9][0-9])+', Regexes.sequence(Regexes.digits, Regexes.digits).captured(:pair).one_or_more.source
+  end
+
+  test 'a capture inside a sequence is read from the whole match' do
+    date = Regexes.sequence(Regexes.digits.exactly(4).captured(:year), Regexes.hyphen,
+                            Regexes.digits.exactly(2).captured(:month))
+
+    assert_equal '11', date.match('2026-11')[:month]
+  end
+
+  test 'captured refuses a name that cannot name a capture' do
+    assert_raises(ArgumentError) { Regexes.digits.captured('2nd year') }
+  end
+
+  test 'captured says why it refused the name' do
+    assert_raises(ArgumentError, match: /can't name a capture/) { Regexes.digits.captured('a-b') }
+  end
+
+  # ── Lookarounds ─────────────────────────────────────────────────────────────────────────────────────────
+
+  test 'followed by matches only where the other comes next' do
+    assert_equal "a b\nc", "a\n b\nc".gsub(Regexes.newline.followed_by(Regexes.space_or_tab), '')
+  end
+
+  test 'followed by does not take what follows' do
+    assert_equal 'http', 'http://'[Regexes.literal('http').followed_by(Regexes.literal('://'))]
+  end
+
+  test 'not followed by matches only where the other does not come next' do
+    assert_equal %w[http], 'https:// http://'.scan(Regexes.literal('http').not_followed_by(Regexes.literal('s')))
+  end
+
+  test 'not followed by gives back repeated characters until it passes' do
+    assert_equal %w[7 5], '7 days 50%'.scan(Regexes.digits.one_or_more.not_followed_by(Regexes.literal('%')))
+  end
+
+  test 'not followed by refuses the whole run when what it repeats is excluded too' do
+    beside = Regexes.either(Regexes.digits, Regexes.literal('%'))
+
+    assert_equal %w[7], '7 days 50%'.scan(Regexes.digits.one_or_more.not_followed_by(beside))
+  end
+
+  test 'preceded by matches only where the other comes before' do
+    assert_equal %w[5], '$5 6'.scan(Regexes.digits.one_or_more.preceded_by(Regexes.literal('$')))
+  end
+
+  test 'preceded by does not take what comes before' do
+    assert_equal '5', '$5'[Regexes.digits.preceded_by(Regexes.literal('$'))]
+  end
+
+  test 'not preceded by matches only where the other does not come before' do
+    assert_equal %w[ada], 'ada @acme'.scan(Regexes.lowercase_letters.one_or_more.not_preceded_by(Regexes.literal('@')).not_preceded_by(Regexes.lowercase_letters))
+  end
+
+  test 'preceded by refuses what Ruby cannot look behind' do
+    assert_raises(RegexpError) { Regexes.digits.preceded_by(Regexes.letters.one_or_more) }
+  end
+
+  test 'a lookaround keeps the anchors' do
+    assert_equal '\A[0-9](?=x)\z', Regexes.digits.whole.followed_by(Regexes.literal('x')).source
+  end
+
+  test 'a lookaround keeps the case-insensitive option' do
+    assert_match Regexes.literal('http').case_insensitive.followed_by(Regexes.literal(':')), 'HTTP:'
+  end
+
+  test 'an expression with a lookaround is grouped when repeated' do
+    assert_equal '(?:[0-9](?=x))+', Regexes.digits.followed_by(Regexes.literal('x')).one_or_more.source
+  end
+
+  test 'a case-insensitive lookahead stays so inside a case-sensitive expression' do
+    assert_match Regexes.literal('a').followed_by(Regexes.literal('b').case_insensitive), 'aB'
+  end
 end

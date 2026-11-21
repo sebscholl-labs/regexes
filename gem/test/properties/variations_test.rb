@@ -32,22 +32,33 @@ class RegexesVariationsTest < RegexesTestCase
     at_least:     [[[:at_least, 2]], '{2,}'],
     between:      [[[:between, 1, 3]], '{1,3}']
   }.freeze
+  # A line's start and end, written out by hand: after a line feed, or a carriage return no line feed follows;
+  # before a carriage return, or a line feed no carriage return comes before.
+  LINE_START  = '(?:\A|(?<=\n)|(?<=\r)(?!\n))'
+  LINE_END    = '(?:(?=\r|\z)|(?<!\r)(?=\n))'
   # Each anchoring: the calls that make it, and the anchors it writes before and after.
   ANCHORS     = {
-    none:              [[], '', ''],
-    leading:           [[[:leading]], '\A', ''],
-    trailing:          [[[:trailing]], '', '\z'],
-    whole:             [[[:whole]], '\A', '\z'],
-    leading_trailing:  [[[:leading], [:trailing]], '\A', '\z'],
-    trailing_leading:  [[[:trailing], [:leading]], '\A', '\z'],
-    leading_twice:     [[[:leading], [:leading]], '\A', ''],
-    whole_and_leading: [[[:whole], [:leading]], '\A', '\z']
+    none:                    [[], '', ''],
+    leading:                 [[[:leading]], '\A', ''],
+    trailing:                [[[:trailing]], '', '\z'],
+    whole:                   [[[:whole]], '\A', '\z'],
+    leading_trailing:        [[[:leading], [:trailing]], '\A', '\z'],
+    trailing_leading:        [[[:trailing], [:leading]], '\A', '\z'],
+    leading_twice:           [[[:leading], [:leading]], '\A', ''],
+    whole_and_leading:       [[[:whole], [:leading]], '\A', '\z'],
+    line_leading:            [[[:line_leading]], LINE_START, ''],
+    line_trailing:           [[[:line_trailing]], '', LINE_END],
+    whole_line:              [[[:whole_line]], LINE_START, LINE_END],
+    line_leading_trailing:   [[[:line_leading], [:line_trailing]], LINE_START, LINE_END],
+    whole_line_then_leading: [[[:whole_line], [:leading]], '\A', LINE_END],
+    whole_then_line_leading: [[[:whole], [:line_leading]], LINE_START, '\z']
   }.freeze
   # Texts that tell the chains apart: empty, every kind of character a set names, the same at either end
   # only, runs of each length, and line breaks where an anchor would be fooled by +^+ or +$+.
   TEXTS       = [
     '', 'a', 'A', 'z', '0', '9', '_', 'f', 'G', ' ', "\t", "\n", '/', '-', 'é', "\u00A0",
     'ab', 'abc1', '1abc', 'aB3_-', 'ABC', '--', '---', 'a/b/c', "a\nb", "\nab", "ab\n", "a\tb c",
+    "a\r\nb", "ab\r\n", "\r\nab", "a\rb", "1\r\n2\r\n3", "\r\n\r\n", "ab\n\ncd",
     '12', '123', 'deadBEEF', '  x  ', "x\n\n\ny"
   ].freeze
 
