@@ -72,5 +72,4 @@ page carries no-break and wide spaces.
 ## Every variation, tested
 
 The suite checks every chain of variations on every set of characters against the regex written out
-by hand: the same source, the same matches on texts chosen to tell them apart, and frozen. That's
-2,688 generated tests, which run in a fraction of a second.
+by hand: the same source, the same matches on texts chosen to tell them apart, and frozen.
