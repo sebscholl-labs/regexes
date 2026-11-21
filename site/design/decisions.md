@@ -39,6 +39,24 @@ and the `\n` of a CRLF — the line break mail and HTTP use — and `^` never st
 (`.whole`), search (as it is) and parsing (`.leading`); an anchored one serves only the first, and gets
 copied again, unanchored, the next time someone needs to search.
 
+## Searching finds whole values
+
+A value made of a fixed count of characters — an IPv4 address's octets, a UUID's hex digits, a date's
+fields, an IBAN's letters — is bounded by lookarounds of those characters. Without them, searching
+`see 1.2.3.456` finds `1.2.3.45`, and `12026-11-21` holds a date. With them, a search finds only whole
+values, and `.whole` is unchanged.
+
+The boundary leaves out characters that commonly sit beside a value: a UUID's has no hyphen, so
+`order-01890a5d-…` still yields its UUID. And it's not applied to open-ended values: `integer` already
+takes every digit in a run.
+
+## Canonical base64
+
+`base64` refuses `QR==`: the `R` carries bits the padding says aren't there. Most decoders would drop
+them; Ruby's strict one refuses the text. Matching only canonical base64 means that what the pattern
+accepts, `unpack1('m0')` decodes — the test suite checks it on every text of up to four base64
+characters.
+
 ## Repeat, then anchor
 
 Repeating an anchored expression is refused rather than guessed at: only one stretch of text can

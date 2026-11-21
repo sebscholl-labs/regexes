@@ -41,14 +41,23 @@ Regexes.uuid.whole.match?('01890a5d-ac96-774b-bcce-b302099a8057')  # => true
 
 ## Named patterns
 
-| Kind                    | Patterns |
-|-------------------------|----------|
-| Sets of characters      | `lowercase_letters` `letters` `digits` `lowercase_alphanumeric` `alphanumeric` `word_characters` `hex_digits` `whitespace` `space_or_tab` `newline` `slash` `hyphen` |
-| Characters and breaks   | `any_character` `line_break` `folded_line_break` `unfolded_line_break` |
-| Numbers and identifiers | `integer` `uuid` `identifier` |
-| Times                   | `utc_offset` `iso8601_date` `iso8601_time` `iso8601_date_time` |
-| Addresses               | `http_scheme` `dns_label` `domain_name` `email_address` |
-| Text                    | `markdown_code_span` |
+| Section | Patterns |
+|---|---|
+| Sets of characters | `lowercase_letters` `uppercase_letters` `letters` `digits` `lowercase_alphanumeric` `uppercase_alphanumeric` `alphanumeric` `word_characters` `binary_digits` `octal_digits` `hex_digits` `base32_digits` `base58_digits` `base64_digits` `base64url_digits` `whitespace` `ascii_whitespace` `space_or_tab` `newline` `slash` `hyphen` `dashes` `apostrophes` `double_quotes` `unicode_letters` `unicode_digits` `combining_marks` `control_characters` `format_characters` |
+| Characters and breaks | `any_character` `line_break` `unicode_line_break` `paragraph_break` |
+| Numbers | `integer` `unsigned_integer` `positive_integer` `decimal(places:)` `unsigned_decimal(places:)` `json_number` `latitude` `longitude` `port_number` |
+| Identifiers | `identifier` `snake_case` `screaming_snake_case` `kebab_case` `camel_case` `pascal_case` `uuid` `ulid` `semantic_version` `media_type` `json_web_token` `base64` `base64url` |
+| Times | `utc_offset` `iso8601_date` `iso8601_year_month` `iso8601_time` `iso8601_date_time` `iso8601_duration` `rfc3339_timestamp` |
+| Network | `uri_scheme` `http_scheme` `http_url` `dns_label` `domain_name` `ipv4_address` `ipv6_address` `ip_address` `ipv4_cidr` `ipv6_cidr` `mac_address` |
+| Mail | `email_address` `message_id` `header_field_name` `folded_line_break` `unfolded_line_break` |
+| Codes | `e164_phone_number` `iban` `bic` `language_tag` `hex_color` |
+| Text | `markdown_code_span` `markdown_link` `ruby_format_reference` `mustache_tag` `shell_variable_reference` `file_extension` `emoji` |
+
+Each checks shape, never meaning (no checksums, no calendar), and one made of a fixed count of digits or
+letters never matches inside a longer run, so searching text finds whole values. Codes that are only a set and
+a count are written as one: a country code is `Regexes.uppercase_letters.exactly(2)`. The
+[reference](https://sebscholl-labs.github.io/regexes/reference/patterns) says what each matches, refuses and
+captures.
 
 Names follow [a fixed set of conventions](https://sebscholl-labs.github.io/regexes/design/naming), so the
 one you need can be guessed.

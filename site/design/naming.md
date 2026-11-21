@@ -34,7 +34,7 @@ Regexes.integer      # => /-?[0-9]+/   one whole number
 Case first, then script or standard, then the noun:
 
 - `lowercase_alphanumeric`, `uppercase_letters` (case)
-- `unicode_letters`, `iso8601_date`, `alpha2_country_code` (script or standard)
+- `unicode_letters`, `iso8601_date`, `rfc3339_timestamp` (script or standard)
 
 So there's one place to look: `lowercase_hex_digits`, never `hex_digits_lowercase`.
 
@@ -56,12 +56,18 @@ thing:
 | `Regexes.uuid.whole` | `whole_uuid` |
 | `Regexes.slash.one_or_more.trailing` | `trailing_slash` |
 | `Regexes.slash.excluded.one_or_more` | `path_segment` |
+| `Regexes.uppercase_letters.exactly(2)` | `alpha2_country_code` |
+| `Regexes.hex_digits.exactly(64)` | `sha256_digest` |
 
-## 6. A standard is named only when formats compete
+That holds for standards too. A pattern checks shape, not whether a code is assigned (rule 9), so an ISO
+3166 country code *is* two uppercase letters, and a name for it would be a second name for
+`uppercase_letters.exactly(2)`. A standard gets a name when its shape has parts or rules — `iban`, `bic`,
+`language_tag`, `uuid` — not when it's a set and a count.
+
+## 6. A standard is in the name only when formats compete
 
 When several formats exist for the same noun, the standard goes in the name: `iso8601_date`,
-`alpha2_country_code`, `e164_phone_number`. When there's one, the noun is enough: `uuid`, `iban`,
-`bic`, `currency_code`.
+`rfc3339_timestamp`, `e164_phone_number`. When there's one, the noun is enough: `uuid`, `iban`, `bic`.
 
 ## 7. Abbreviations only where they are the common name
 

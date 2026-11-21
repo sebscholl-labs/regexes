@@ -44,11 +44,12 @@ pattern that fits none of them is a sign it doesn't belong here.
 4. **ASCII unless the name says otherwise.** `digits` is `[0-9]`; wider sets say so (`unicode_letters`).
    The one exception is `whitespace`, which is any script's spaces, because that's what the bare
    word is reached for.
-5. **Variations never become names.** No `non_digits` (`digits.excluded`), `whitespace_run`
-   (`.one_or_more`), `whole_uuid` or `trailing_slash`. A set plus a variation gets a docs example,
-   not a name.
-6. **A standard is named only when formats compete for the noun:** `iso8601_date`,
-   `alpha2_country_code`, `e164_phone_number`; but `uuid`, `iban`, `bic`, `currency_code`.
+5. **Variations never become names, nor does a set and a count.** No `non_digits`
+   (`digits.excluded`), `whitespace_run` (`.one_or_more`), `whole_uuid` or `trailing_slash`; no
+   `alpha2_country_code` (`uppercase_letters.exactly(2)`) or `sha256_digest`. They get a docs
+   example, not a name. A standard is named when its shape has parts or rules.
+6. **A standard is in the name only when formats compete for the noun:** `iso8601_date`,
+   `rfc3339_timestamp`, `e164_phone_number`; but `uuid`, `iban`, `bic`.
 7. **Abbreviations only where they are the common name:** uuid, url, ipv4, iban, bic, e164, cidr.
    Never `num`, `addr`, `str`.
 8. **Captures take the standard's terms:** `email_address` → `local`, `domain`.

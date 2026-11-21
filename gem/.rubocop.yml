@@ -32,6 +32,17 @@ Metrics/ClassLength:
 Metrics/ModuleLength:
   Enabled: false
 
+# The text patterns' tests hold format references as data, to match, never to format with.
+Style/FormatStringToken:
+  Exclude:
+    - 'test/regexes/patterns/text_test.rb'
+
+# Each file under patterns/ reopens `module Regexes` to add one section; the module is documented once, in
+# lib/regexes.rb.
+Style/Documentation:
+  Exclude:
+    - 'lib/regexes/patterns/**/*'
+
 # Hash value omission (foo: foo → foo:) wherever possible.
 Style/HashSyntax:
   EnforcedShorthandSyntax: always

@@ -40,6 +40,10 @@ path, with `::` and `/` removed and `Test` appended:
 | `lib/regexes.rb` | `test/regexes_test.rb` | `RegexesTest` |
 | `lib/regexes/expression.rb` | `test/regexes/expression_test.rb` | `RegexesExpressionTest` |
 | `lib/regexes/character_class.rb` | `test/regexes/character_class_test.rb` | `RegexesCharacterClassTest` |
+| `lib/regexes/patterns/times.rb` | `test/regexes/patterns/times_test.rb` | `RegexesTimesTest` |
+
+`patterns/` is a folder, not a namespace (its files reopen `Regexes`), so it is left out of the class
+name.
 
 Put a test in the file of the code that **owns the behavior**, not the entry point it calls through.
 `sequence` and `either` are defined in `lib/regexes.rb`, so their tests are in `regexes_test.rb`;
@@ -49,20 +53,39 @@ reached through `Regexes.digits`.
 The only directories that don't mirror `lib/`, excluded from that cop in `.rubocop.yml`:
 
 - `test/support/`: the base class and helpers.
-- `test/properties/`: generated suites that check a property across the whole library rather than
-  one file, such as every chain of variations on every set (`variations_test.rb`).
+- `test/properties/`: suites that check a property over many generated texts rather than one file.
+  Their classes end in `PropertiesTest`, so they never reopen a section's test class:
+
+  | Suite | Checks |
+  |---|---|
+  | `variations_test.rb` | every chain of variations on every set, against the regex written out by hand |
+  | `backtracking_test.rb` | every named pattern against long near misses, within `Regexp.timeout` |
+  | `ip_addresses_test.rb` | the IP patterns against `IPAddr`, on addresses it writes and near misses |
+  | `times_test.rb` | every value of every date and time field, and what Ruby writes |
+  | `numbers_test.rb` | every port, `JSON.parse` on JSON numbers, coordinates over and past their range |
+  | `base64_test.rb` | the base64 patterns against Ruby's strict decoder |
+
+  Generated texts come from a fixed `SEED`, so a failure repeats. A property is one assertion over
+  the whole collection (`assert_equal expected, texts.grep(pattern)`), which lists every text the
+  pattern and the reference disagree on.
 
 ## Every named pattern has a case table
 
-`test/regexes_test.rb` holds `CASES`: for each named pattern, texts it must match whole and texts
-it must refuse whole. A test there fails if a named pattern is missing from it. Every row gets, for
-free: one test per text, `.whole` refusing its first match with a line feed after or a space before
-(the `^`/`$` mistake), the same object every time, and frozen.
+Each section's test (`test/regexes/patterns/<section>_test.rb`) calls `cases(table, defined_in:)`
+from `RegexesTestCase`: for each named pattern, texts it must match whole and texts it must refuse
+whole. Every row gets, for free: one test per text; its first match refused whole with a line after
+it or a space before it (the `^`/`$` mistake); its first match found inside other text; and that it
+is the same frozen expression every time. One more test fails if a pattern defined in the section's
+file has no row, and `regexes_test.rb` fails if a named pattern is defined outside `patterns/`.
 
 A row covers, where they apply: typical examples; the shortest and longest allowed and one past
 each; every range edge (`00`, `23`, `24`); each part missing or malformed; the wrong case; a
 lookalike from another script; and the empty string. Texts in one row must differ, or the
-generated test names collide.
+generated test names collide. A pattern that ends looking ahead at a character it doesn't take
+(`folded_line_break`) can never match whole: its row has no matches, and its section tests it in text.
+
+Beside the table, a section tests each named capture (one test per capture) and, for a pattern with
+token boundaries, that a search never finds it inside a longer run.
 
 ## One assertion per test
 

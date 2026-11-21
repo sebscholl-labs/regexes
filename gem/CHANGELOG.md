@@ -17,6 +17,22 @@
 - `Regexes.literal(text)`, text matched character for character.
 - `Regexes.register(name, pattern)` adds an application's own pattern under a name, as a frozen expression with
   every variation; `Regexes.registered` lists the names added.
+- Sets: `uppercase_letters`, `uppercase_alphanumeric`, `binary_digits`, `octal_digits`, `base32_digits`,
+  `base58_digits`, `base64_digits`, `base64url_digits`, `ascii_whitespace`, `dashes`, `apostrophes`,
+  `double_quotes`, `unicode_letters`, `unicode_digits`, `combining_marks`, `control_characters` and
+  `format_characters`.
+- Breaks: `unicode_line_break` and `paragraph_break`.
+- Numbers: `unsigned_integer`, `positive_integer`, `decimal(places:)`, `unsigned_decimal(places:)`, `json_number`,
+  `latitude`, `longitude` and `port_number`.
+- Identifiers: `snake_case`, `screaming_snake_case`, `kebab_case`, `camel_case`, `pascal_case`, `ulid`,
+  `semantic_version`, `media_type`, `json_web_token`, `base64` and `base64url`.
+- Times: `iso8601_year_month`, `iso8601_duration` and `rfc3339_timestamp`.
+- Network: `uri_scheme`, `http_url`, `ipv4_address`, `ipv6_address`, `ip_address`, `ipv4_cidr`, `ipv6_cidr` and
+  `mac_address`.
+- Mail: `message_id` and `header_field_name`.
+- Codes: `e164_phone_number`, `iban`, `bic`, `language_tag` and `hex_color`.
+- Text: `markdown_link`, `ruby_format_reference`, `mustache_tag`, `shell_variable_reference`, `file_extension` and
+  `emoji`.
 
 ### Changed
 
@@ -27,6 +43,9 @@
   refused.
 - **Breaking:** ISO 8601 fields are checked against their ranges (month, day, hour, minute, second, offset),
   so `2026-13-01` and `24:00` are refused.
+
+- `Regexes.uuid`, and the ISO 8601 patterns that start or end with a digit, never match inside a longer run of
+  hex digits or digits.
 
 ### Fixed
 
