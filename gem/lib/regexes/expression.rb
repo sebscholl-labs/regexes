@@ -22,18 +22,24 @@ module Regexes
   class Expression < Regexp
     # What each kind of anchor writes at the start. A line starts at the start of the text, after a line feed,
     # and after a carriage return that no line feed follows, so +\r\n+, +\r+ and +\n+ each end one line.
-    STARTS       = {
+    STARTS          = {
       text: '\A',
       line: '(?:\A|(?<=\n)|(?<=\r)(?!\n))'
     }.freeze
     # What each kind of anchor writes at the end. A line ends at the end of the text, before a carriage return,
     # and before a line feed that no carriage return comes before.
-    ENDS         = {
+    ENDS            = {
       text: '\z',
       line: '(?:(?=\r|\z)|(?<!\r)(?=\n))'
     }.freeze
     # What a capture's name may be: what Ruby allows as one, and what +MatchData#[]+ reads by.
-    CAPTURE_NAME = /\A[A-Za-z_][A-Za-z0-9_]*\z/
+    CAPTURE_NAME    = /\A[A-Za-z_][A-Za-z0-9_]*\z/
+    # A negative lookbehind of one bracketed set, opening a body. It refuses one character before the match,
+    # so at the start of the text, where there is none, it always holds.
+    EDGE_LOOKBEHIND = /\A\(\?<!\[(?:\\.|[^\]\\])+\]\)/
+    # A negative lookahead of one bracketed set, closing a body. It refuses one character after the match, so
+    # at the end of the text it always holds.
+    EDGE_LOOKAHEAD  = /\(\?!\[(?:\\.|[^\]\\])+\]\)\z/
 
     # @param body [String] the expression's source, without anchors
     # @param start [Symbol, nil] where it must match from: +:text+ (the text's start), +:line+ (a line's) or nil
@@ -45,7 +51,7 @@ module Regexes
       @start  = start
       @finish = finish
       @single = single
-      super("#{STARTS.fetch(start) if start}#{body}#{ENDS.fetch(finish) if finish}", options)
+      super("#{STARTS.fetch(start) if start}#{edged(body, start, finish)}#{ENDS.fetch(finish) if finish}", options)
       freeze
     end
 
@@ -206,7 +212,7 @@ module Regexes
     # The expression as ECMAScript writes it, for JavaScript (+new RegExp(source, flags)+, with {#ecma_flags})
     # and for a JSON Schema +pattern+. Anchors become +^+ and +$+, which there anchor to the text:
     #
-    #   Regexes.uuid.whole.ecma_source   # => "^(?<![0-9a-fA-F])[0-9a-fA-F]{8}-…(?![0-9a-fA-F])$"
+    #   Regexes.uuid.whole.ecma_source   # => "^[0-9a-fA-F]{8}-…-[0-9a-fA-F]{12}$"
     #
     # A JSON Schema +pattern+ searches, as an unanchored expression does, so give it a +.whole+ expression's.
     #
@@ -226,6 +232,19 @@ module Regexes
     def unit = @single ? @body : "(?:#{@body})"
 
     private
+
+    # The body as written between the anchors: a boundary at an end anchored to the text is left out, since
+    # nothing lies past that end for it to refuse. Searching keeps every boundary; the match is the same.
+    #
+    # @param body [String] the expression's source, without anchors
+    # @param start [Symbol, nil] the start's anchor, as for {#initialize}
+    # @param finish [Symbol, nil] the end's anchor, as for {#initialize}
+    # @return [String] the body without the boundaries its text anchors make redundant
+    def edged(body, start, finish)
+      body = body.sub(EDGE_LOOKBEHIND, '') if start == :text
+      body = body.sub(EDGE_LOOKAHEAD, '') if finish == :text
+      body
+    end
 
     # @param changes [Hash{Symbol => Object}] what differs from this expression
     # @return [Expression] this expression with the changes

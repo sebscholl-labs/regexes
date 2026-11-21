@@ -32,6 +32,14 @@ pattern, and `$` passes over a final newline:
 "ab\n"[Regexes.lowercase_letters.one_or_more.trailing]  # => nil
 ```
 
+A pattern that never matches inside a longer run, such as `uuid`, is bounded by lookarounds that refuse
+the characters around it. At an end anchored to the text there is nothing left to refuse, so `leading`,
+`trailing` and `whole` leave that end's boundary out, and the pattern matches exactly as before:
+
+```ruby
+Regexes.uuid.whole.source  # => "\\A[0-9a-fA-F]{8}-…-[0-9a-fA-F]{12}\\z"
+```
+
 `leading.trailing` is the same as `whole`. Each end holds one anchor, so anchoring an end again
 replaces its anchor, and anchoring twice the same way is anchoring once. `leading?` and `trailing?` say
 where an expression is anchored.

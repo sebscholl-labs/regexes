@@ -7,7 +7,7 @@ ECMAScript don't read every regex the same way. `ecma_source` and `ecma_flags` t
 ```ruby
 pattern = Regexes.uuid.whole
 
-pattern.ecma_source  # => "^(?<![0-9a-fA-F])[0-9a-fA-F]{8}-…-[0-9a-fA-F]{12}(?![0-9a-fA-F])$"
+pattern.ecma_source  # => "^[0-9a-fA-F]{8}-…-[0-9a-fA-F]{12}$"
 pattern.ecma_flags   # => "u"
 ```
 
