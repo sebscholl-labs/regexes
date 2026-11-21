@@ -21,6 +21,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: release
+    # For every step, the release action's `bundle exec rake release` included: a step that ran
+    # without it would expect the development group's gems, which were never installed.
+    env:
+      BUNDLE_WITHOUT: development
 
     steps:
       - name: Check out source
@@ -35,13 +39,9 @@ jobs:
           ruby-version: "4.0"
           working-directory: gem
           bundler-cache: true
-        env:
-          BUNDLE_WITHOUT: development
 
       - name: Verify test suite
         run: bundle exec rake
-        env:
-          BUNDLE_WITHOUT: development
 
       - name: Publish gem to RubyGems.org
         uses: rubygems/release-gem@v1
