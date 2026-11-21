@@ -10,7 +10,7 @@ module Regexes
       # @param description [String] what the test shows
       # @raise [ArgumentError] when another test already has the description
       def test(description, &)
-        name = "test_#{description.gsub(/\s+/, '_')}"
+        name = "test_ #{description}"
         raise ArgumentError, "#{name} is already defined in #{self}" if method_defined?(name)
 
         define_method(name, &)

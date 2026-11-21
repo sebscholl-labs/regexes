@@ -46,9 +46,12 @@ Regexes.uuid.whole.match?('01890a5d-ac96-774b-bcce-b302099a8057')  # => true
 | Sets of characters      | `lowercase_letters` `letters` `digits` `lowercase_alphanumeric` `alphanumeric` `word_characters` `hex_digits` `whitespace` `space_or_tab` `newline` `slash` `hyphen` |
 | Characters and breaks   | `any_character` `line_break` `folded_line_break` `unfolded_line_break` |
 | Numbers and identifiers | `integer` `uuid` `identifier` |
-| Times                   | `utc_offset` `iso8601_time` |
+| Times                   | `utc_offset` `iso8601_date` `iso8601_time` `iso8601_date_time` |
 | Addresses               | `http_scheme` `dns_label` `domain_name` `email_address` |
-| Text                    | `backtick_code` |
+| Text                    | `markdown_code_span` |
+
+Names follow [a fixed set of conventions](https://sebscholl-labs.github.io/regexes/design/naming), so the
+one you need can be guessed.
 
 ## Variations
 

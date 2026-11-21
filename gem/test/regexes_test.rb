@@ -24,14 +24,34 @@ class RegexesTest < Regexes::TestCase
     uuid:                   [%w[01890a5d-ac96-774b-bcce-b302099a8057 01890A5D-AC96-774B-BCCE-B302099A8057],
                              %w[01890a5dac96774bbcceb302099a8057 01890a5d-ac96-774b-bcce-b302099a805 x1890a5d-ac96-774b-bcce-b302099a8057]],
     identifier:             [%w[get_order Tag2 x], %w[2tag get-order _x]],
-    utc_offset:             [%w[Z +05:30 -0500], %w[z +5:30 05:00]],
-    iso8601_time:           [['2026-11-21T14:30', '2026-11-21 14:30:05.123Z', '2026-11-21T14:30:05-05:00'],
-                             ['2026-11-21', '2026-11-21T14', '21/11/2026 14:30', '2026-11-21T14:30:05+5']],
+    utc_offset:             [%w[Z +05:30 -0500 +00:00 -23:59 +1400],
+                             %w[z +5:30 05:00 +24:00 +05:60 +05 +05:3 UTC]],
+    iso8601_date:           [%w[2026-11-21 0000-01-01 9999-12-31 2026-02-30 2026-10-10 2026-09-09],
+                             %w[2026-00-01 2026-13-01 2026-11-00 2026-11-32 20261121 26-11-21 2026-1-21 2026-11-2
+                                2026/11/21 2026-11-21T14:30 +2026-11-21] + ['']],
+    iso8601_time:           [%w[14:30 00:00 23:59 14:30:05 23:59:60 14:30:05.1 14:30:05.123456789],
+                             %w[24:00 14:60 14:30:61 1430 14 4:30 14:3 14:30:5 14:30. 14:30:05. 14:30:05,5
+                                14:30Z T14:30] + ['']],
+    iso8601_date_time:      [['2026-11-21T14:30', '2026-11-21 14:30:05.123Z', '2026-11-21T14:30:05-05:00',
+                              '2026-11-21T00:00:00Z', '2026-11-21T23:59:60+0530'],
+                             ['2026-11-21', '2026-11-21T14', '21/11/2026 14:30', '2026-11-21T14:30:05+5',
+                              '2026-11-21T24:00', '2026-13-21T14:30', '2026-11-21t14:30', '2026-11-21T14:30z',
+                              '2026-11-21  14:30', '2026-11-21T14:30:05 Z']],
     http_scheme:            [%w[http:// https://], %w[HTTPS:// ftp:// http: https//]],
-    dns_label:              [%w[acme mail-1 a 0], ['-acme', 'acme-', 'Acme', 'ac_me', 'acme.example', '']],
-    domain_name:            [%w[acme.example mail.acme.co.uk 1.example], %w[acme acme..example .acme.example Acme.example]],
-    email_address:          [%w[ada@acme.example a+b@x], ['ada', '@acme.example', 'ada@', 'a da@x', 'a@b@c']],
-    backtick_code:          [['`get_order`', '`a b`'], %w[`` `open get_order`]]
+    dns_label:              [['acme', 'mail-1', 'a', '0', 'xn--bcher-kva', 'a' * 63, "a#{'-' * 61}a"],
+                             ['-acme', 'acme-', 'Acme', 'ac_me', 'acme.example', '', 'a' * 64, 'ac me', 'äcme']],
+    domain_name:            [['acme.example', 'mail.acme.co.uk', '1.example', 'xn--bcher-kva.example',
+                              "#{'a' * 63}.example", "#{(['a' * 63] * 3).join('.')}.#{'b' * 61}"],
+                             ['acme', 'acme..example', '.acme.example', 'Acme.example', 'acme.example.',
+                              "#{'a' * 64}.example", "#{(['a' * 63] * 3).join('.')}.#{'b' * 62}",
+                              'acme-.example', '-acme.example', 'ac_me.example', '']],
+    email_address:          [%w[ada@acme.example a+b@x ada.lovelace@acme.example ADA@ACME.EXAMPLE a@mail.acme.co.uk
+                                user!#$%&'*+/=?^_`{|}~-@x .a@x a..b@x a@1.2.3.4],
+                             ['ada', '@acme.example', 'ada@', 'a da@x', 'a@b@c', 'ada@acme..example',
+                              'ada@-acme.example', 'ada@acme-.example', 'ada@acme.example.', 'ada@acme_x.example',
+                              '"ada"@acme.example', 'ada@[127.0.0.1]', 'adä@acme.example', 'ada@äcme.example',
+                              "ada@#{'a' * 64}.example", 'ada(x)@acme.example', '']],
+    markdown_code_span:     [['`get_order`', '`a b`', '` `', '`<b>`'], ['``', '`open get_order', 'get_order', '```']]
   }.freeze
 
   CASES.each do |name, (matches, refuses)|
@@ -45,6 +65,14 @@ class RegexesTest < Regexes::TestCase
       test "#{name} refuses #{text.inspect} whole" do
         refute_match Regexes.public_send(name).whole, text
       end
+    end
+
+    test "#{name} whole refuses its first match with a line feed after it" do
+      refute_match Regexes.public_send(name).whole, "#{matches.first}\n"
+    end
+
+    test "#{name} whole refuses its first match with a space before it" do
+      refute_match Regexes.public_send(name).whole, " #{matches.first}"
     end
 
     test "#{name} is the same object every time" do
@@ -70,8 +98,16 @@ class RegexesTest < Regexes::TestCase
     assert_equal %w[ada acme.example], [match[:local], match[:domain]]
   end
 
-  test 'backtick code captures the code' do
-    assert_equal 'get_order', Regexes.backtick_code.match('call `get_order` now')[:code]
+  test 'an email address in text is found without the words around it' do
+    assert_equal 'ada@acme.example', 'write to ada@acme.example today'[Regexes.email_address]
+  end
+
+  test 'a domain name of 253 characters within longer text is not cut short to fit' do
+    assert_nil "#{(['a' * 63] * 3).join('.')}.#{'b' * 62}"[Regexes.domain_name.leading]
+  end
+
+  test 'a markdown code span captures the code' do
+    assert_equal 'get_order', Regexes.markdown_code_span.match('call `get_order` now')[:code]
   end
 
   test 'three or more newlines are the gap between paragraphs left too far apart' do

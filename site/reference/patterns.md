@@ -58,20 +58,34 @@ it, and splitting on the unfolded ones separates headers:
 
 | Pattern | Matches | Refuses |
 |---|---|---|
-| `utc_offset` | `Z` `+05:30` `-0500` | `z` `+5:30` `05:00` |
-| `iso8601_time` | `2026-11-21T14:30`, `2026-11-21 14:30:05.123Z`, `2026-11-21T14:30:05-05:00` | a date alone, `2026-11-21T14`, `21/11/2026 14:30` |
+| `utc_offset` | `Z` `+05:30` `-0500` `-23:59` | `z` `+5:30` `+24:00` `+05:60` `+05` |
+| `iso8601_date` | `2026-11-21` `0000-01-01` `9999-12-31` | `2026-13-01` `2026-11-32` `20261121` `2026-1-21` |
+| `iso8601_time` | `14:30` `14:30:05` `23:59:60` `14:30:05.123` | `24:00` `14:60` `1430` `14:30:05,5` |
+| `iso8601_date_time` | `2026-11-21T14:30`, `2026-11-21 14:30:05.123Z`, `2026-11-21T14:30:05-05:00` | a date alone, `2026-11-21T14`, `2026-11-21t14:30`, `21/11/2026 14:30` |
+
+Each field is checked against its range — month `01`–`12`, day `01`–`31`, hour `00`–`23`, minute
+`00`–`59`, second `00`–`60` (a leap second) — but never against the calendar: `2026-02-30` has a date's
+shape. Only ISO 8601's extended format (with hyphens and colons) is matched, and a fraction of a
+second is written with a dot, as RFC 3339 and Ruby's `Time.iso8601` require. `iso8601_date_time`
+allows a space for the `T`, as RFC 3339 does.
 
 ## Addresses
 
 | Pattern | Matches | Refuses |
 |---|---|---|
 | `http_scheme` | `http://` `https://` | `HTTPS://` (use `.case_insensitive`), `ftp://` |
-| `dns_label` | `acme` `mail-1` `a` `0` | `-acme` `acme-` `Acme` `ac_me` |
-| `domain_name` | `acme.example` `mail.acme.co.uk` | `acme` `acme..example` `Acme.example` |
-| `email_address` | `ada@acme.example` `a+b@x` | `ada` `@acme.example` `a da@x` `a@b@c` |
+| `dns_label` | `acme` `mail-1` `a` `0` `xn--bcher-kva` | `-acme` `acme-` `Acme` `ac_me`, 64 characters |
+| `domain_name` | `acme.example` `mail.acme.co.uk` | `acme` `acme..example` `Acme.example` `acme.example.`, 254 characters |
+| `email_address` | `ada@acme.example` `a+b@x` `ADA@ACME.EXAMPLE` | `ada` `@acme.example` `a da@x` `a@b@c` `"ada"@acme.example` |
 
-`email_address` checks only the shape: one `@` with something on either side and no whitespace.
-Whether the address exists is for the mail to find out. It captures `local` and `domain`:
+A `dns_label` is at most 63 characters and a `domain_name` at most 253 (RFC 1035). Both are lowercase;
+add `.case_insensitive` to accept either case. An internationalized name is matched in its ASCII form
+(`xn--…`), as DNS carries it.
+
+`email_address` is the address an HTML form's `type=email` input accepts (WHATWG HTML), so a browser and
+your server reach the same verdict. Like the browser, it allows a domain of one label (`a+b@x`), dots
+anywhere in the local part, and either case; it refuses quoted local parts and IP-literal domains. Whether
+the address exists is for the mail to find out. It captures `local` and `domain`:
 
 ```ruby
 match = Regexes.email_address.whole.match('ada@acme.example')
@@ -82,10 +96,11 @@ match = Regexes.email_address.whole.match('ada@acme.example')
 
 | Pattern | Matches | Refuses |
 |---|---|---|
-| `backtick_code` | `` `get_order` `` `` `a b` `` | ` `` `, an unclosed backtick |
+| `markdown_code_span` | `` `get_order` `` `` `a b` `` | ` `` `, an unclosed backtick |
 
-Markdown's inline code, its text captured as `code`:
+Markdown's inline code — a code span, in CommonMark's terms — its text captured as `code`. Only the
+single-backtick form is matched:
 
 ```ruby
-Regexes.backtick_code.match('call `get_order` now')[:code]  # => "get_order"
+Regexes.markdown_code_span.match('call `get_order` now')[:code]  # => "get_order"
 ```

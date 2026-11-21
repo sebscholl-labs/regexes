@@ -40,7 +40,10 @@ export default defineConfig({
       },
       {
         text: 'Design',
-        items: [{ text: 'Decisions', link: '/design/decisions' }],
+        items: [
+          { text: 'Naming', link: '/design/naming' },
+          { text: 'Decisions', link: '/design/decisions' },
+        ],
       },
     ],
     socialLinks: [{ icon: 'github', link: 'https://github.com/sebscholl-labs/regexes' }],

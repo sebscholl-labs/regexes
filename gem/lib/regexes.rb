@@ -127,58 +127,80 @@ module Regexes
 
   # ── Times ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  UTC_OFFSET   = Expression.new('(?:Z|[+-][0-9]{2}:?[0-9]{2})', single: true)
-  ISO8601_TIME = Expression.new(
-    "[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:\\.[0-9]+)?)?#{UTC_OFFSET.source}?"
-  )
+  UTC_OFFSET        = Expression.new('(?:Z|[+-](?:[01][0-9]|2[0-3]):?[0-5][0-9])', single: true)
+  ISO8601_DATE      = Expression.new('[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])')
+  ISO8601_TIME      = Expression.new('(?:[01][0-9]|2[0-3]):[0-5][0-9](?::(?:[0-5][0-9]|60)(?:\.[0-9]+)?)?')
+  ISO8601_DATE_TIME = Expression.new("#{ISO8601_DATE.source}[T ]#{ISO8601_TIME.source}#{UTC_OFFSET.source}?")
 
-  # +Regexes.utc_offset+ matches +Z+, +-05:00+ and +-0500+.
+  # +Regexes.utc_offset+ matches +Z+, +-05:00+ and +-0500+: hours to 23, minutes to 59.
   #
   # @return [Expression] how far a time is from UTC, as ISO 8601 writes it
   def utc_offset = UTC_OFFSET
 
-  # +Regexes.iso8601_time.whole+ matches +2026-11-21T14:30+, +2026-11-21 14:30:05.123Z+ and
-  # +2026-11-21T14:30:05-05:00+, never a date alone.
+  # +Regexes.iso8601_date.whole+ matches +2026-11-21+, never +2026-13-01+, +2026-11-32+ or +20261121+. Each
+  # field is checked against its range, never against the calendar: +2026-02-30+ is a date's shape.
   #
-  # @return [Expression] a date and time as ISO 8601 writes it, seconds and offset optional
+  # @return [Expression] a calendar date as ISO 8601's extended format writes it
+  def iso8601_date = ISO8601_DATE
+
+  # +Regexes.iso8601_time.whole+ matches +14:30+, +14:30:05+ and +23:59:60.5+ (a leap second), never +24:00+,
+  # +14:60+ or +1430+. It is the time of day alone: a date and time is {#iso8601_date_time}.
+  #
+  # @return [Expression] a time of day as ISO 8601's extended format writes it, seconds and fraction optional
   def iso8601_time = ISO8601_TIME
+
+  # +Regexes.iso8601_date_time.whole+ matches +2026-11-21T14:30+, +2026-11-21 14:30:05.123Z+ and
+  # +2026-11-21T14:30:05-05:00+, never a date alone. A space may stand for the +T+, as RFC 3339 allows.
+  #
+  # @return [Expression] an {#iso8601_date} and an {#iso8601_time}, then an optional {#utc_offset}
+  def iso8601_date_time = ISO8601_DATE_TIME
 
   # ── Addresses ───────────────────────────────────────────────────────────────────────────────────────────
 
   HTTP_SCHEME   = Expression.new('https?://')
-  DNS_LABEL     = Expression.new('[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', single: true)
-  DOMAIN_NAME   = Expression.new("#{DNS_LABEL.source}(?:\\.#{DNS_LABEL.source})+")
-  EMAIL_ADDRESS = Expression.new('(?<local>[^@\s]+)@(?<domain>[^@\s]+)')
+  DNS_LABEL     = Expression.new('[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', single: true)
+  DOMAIN_NAME   = Expression.new(
+    "(?=[a-z0-9.-]{1,253}(?![a-z0-9.-]))#{DNS_LABEL.source}(?:\\.#{DNS_LABEL.source})+"
+  )
+  EMAIL_ADDRESS = Expression.new(
+    "(?<local>[A-Za-z0-9.!\#$%&'*+/=?^_`{|}~-]+)" \
+    '@(?<domain>[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)'
+  )
 
   # +Regexes.http_scheme.leading.case_insensitive+ tells a web link from a +cid:+ or +mailto:+ one.
   #
   # @return [Expression] +http://+ or +https://+, in lowercase
   def http_scheme = HTTP_SCHEME
 
-  # +Regexes.dns_label.whole+ matches +acme+ and +mail-1+, never +-acme+, +acme-+ or +Acme+.
+  # +Regexes.dns_label.whole+ matches +acme+ and +mail-1+, never +-acme+, +acme-+, +Acme+ or a label of more
+  # than 63 characters (RFC 1035 §2.3.4).
   #
   # @return [Expression] one label of a domain name, lowercase: letters, digits and inner hyphens
   def dns_label = DNS_LABEL
 
-  # +Regexes.domain_name.whole+ matches +acme.example+ and +mail.acme.co.uk+, never +acme+ or +acme..example+.
+  # +Regexes.domain_name.whole+ matches +acme.example+ and +mail.acme.co.uk+, never +acme+, +acme..example+,
+  # +acme.example.+ (a trailing dot) or a name of more than 253 characters.
   #
-  # @return [Expression] two or more lowercase labels joined by dots
+  # @return [Expression] two or more lowercase {#dns_label}s joined by dots
   def domain_name = DOMAIN_NAME
 
-  # Only its shape: one +@+ with something on either side and no whitespace anywhere. Whether such an address
-  # exists is for the mail to find out. Its parts are captured as +local+ and +domain+.
+  # The address an HTML form's +type=email+ input accepts (WHATWG HTML §4.10.5.1.5), so a browser and a server
+  # reach the same verdict: +ada@acme.example+, +a+b@x+. Like the browser, it allows a domain of one label
+  # and dots anywhere in the local part. Whether the address exists is for the mail to find out. Its parts are
+  # captured as +local+ and +domain+.
   #
   # @return [Expression] an email address, as +ada@acme.example+
   def email_address = EMAIL_ADDRESS
 
   # ── Text ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  BACKTICK_CODE = Expression.new('`(?<code>[^`]+)`')
+  MARKDOWN_CODE_SPAN = Expression.new('`(?<code>[^`]+)`')
 
-  # Markdown's inline code: +`get_order`+, its text captured as +code+.
+  # Markdown's inline code, a code span in CommonMark's terms: +`get_order`+, its text captured as +code+. Only
+  # the single-backtick form: a span opened by two backticks, to hold one, is not matched.
   #
   # @return [Expression] text between a pair of backticks, never empty
-  def backtick_code = BACKTICK_CODE
+  def markdown_code_span = MARKDOWN_CODE_SPAN
 
   # ── Composition ─────────────────────────────────────────────────────────────────────────────────────────
 
