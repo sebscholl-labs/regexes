@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
   base: '/regexes/',
   title: 'regexes',
-  description: 'Regular expressions named for what they match',
+  description: 'Named, tested regular expressions for Ruby',
   lang: 'en-US',
   cleanUrls: true,
   lastUpdated: true,

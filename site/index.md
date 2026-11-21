@@ -2,8 +2,8 @@
 layout: home
 hero:
   name: regexes
-  text: Regular expressions named for what they match
-  tagline: Frozen Regexp objects for the shapes that recur — sets of characters, UUIDs, times, domain names, email addresses — each chaining the variations every expression allows.
+  text: The regex you need, already written
+  tagline: Patterns named for what they match — UUIDs, IP addresses, ISO 8601 times, IBANs — each a frozen Regexp that chains anchors, repetition and captures, tested against Ruby's own parsers and runs the same in JavaScript.
   actions:
     - theme: brand
       text: Quick Start

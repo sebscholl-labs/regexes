@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ['Sebastian Scholl']
   spec.email   = ['sebscholl@gmail.com']
 
-  spec.summary     = 'Regular expressions named for what they match, each with the variations it allows: ' \
-                     'excluded, one or more, anchored at the start or the end.'
+  spec.summary     = 'Named, tested regular expressions for Ruby: frozen Regexps for UUIDs, IP addresses, times ' \
+                     'and more, with chainable anchors, repetition and captures.'
   spec.description = <<~TEXT
     Regexes is a library of frozen Regexp objects named for what they match (letters, digits, UUIDs,
     ISO 8601 times, domain names, email addresses), each chaining the variations every expression allows:
