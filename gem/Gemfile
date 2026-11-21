@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+gemspec
+
+gem 'minitest', '~> 5.25'
+gem 'rake', '~> 13.2'
+
+group :development do
+  gem 'irb', '>= 1.13'
+end
+
+group :quality do
+  gem 'rubocop', '~> 1.92', require: false
+  gem 'rubocop-minitest', require: false
+  gem 'rubocop-yard', require: false
+end

@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+require 'bundler/gem_tasks'
+require 'rake/testtask'
+
+Rake::TestTask.new(:test) do |task|
+  task.libs << 'lib' << 'test'
+  task.test_files = FileList['test/**/*_test.rb']
+end
+
+# RuboCop is an optional bundle group in CI; define its task only when installed.
+begin
+  require 'rubocop/rake_task'
+
+  RuboCop::RakeTask.new(:rubocop)
+  task lint: %i[rubocop]
+rescue LoadError
+  nil
+end
+
+task default: %i[test lint]

@@ -1,0 +1,57 @@
+plugins:
+  - rubocop-minitest
+  - rubocop-yard
+
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'bin/**/*'
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - 'test/**/*_test.rb'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'test/**/*_test.rb'
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+# Hash value omission (foo: foo → foo:) wherever possible.
+Style/HashSyntax:
+  EnforcedShorthandSyntax: always
+
+# Hash values aligned in a column for multi-line hash literals.
+Layout/HashAlignment:
+  EnforcedColonStyle: table
+  EnforcedHashRocketStyle: table
+
+# Consecutive `=` assignments aligned in a column.
+Layout/ExtraSpacing:
+  ForceEqualSignAlignment: true
+
+Style/ModuleFunction:
+  EnforcedStyle: extend_self
+
+Style/ClassMethodsDefinitions:
+  Enabled: true
+  EnforcedStyle: self_class
+
+Style/DocumentationMethod:
+  Enabled: true
+  RequireForNonPublicMethods: true
+
+YARD/CollectionStyle:
+  EnforcedStyle: long
+
+# One assertion per test.
+Minitest/MultipleAssertions:
+  Max: 1

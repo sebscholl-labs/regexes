@@ -1,0 +1,49 @@
+name: Publish Gem
+
+# Authentication is RubyGems trusted publishing (OIDC): no API key is stored. The trusted
+# publisher on rubygems.org names this repository, this workflow file (release.yml) and the
+# `release` environment, so renaming any of them breaks publishing until the RubyGems settings
+# are updated too.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    working-directory: gem
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0"
+          working-directory: gem
+          bundler-cache: true
+        env:
+          BUNDLE_WITHOUT: development
+
+      - name: Verify test suite
+        run: bundle exec rake
+        env:
+          BUNDLE_WITHOUT: development
+
+      - name: Publish gem to RubyGems.org
+        uses: rubygems/release-gem@v1
+        with:
+          working-directory: gem

@@ -1,0 +1,5 @@
+# mise ignores .ruby-version unless told to: "idiomatic" version files are off by default. The Ruby
+# version is declared in .ruby-version, so rather than pin it a second time here, this switches that
+# reading back on — keeping one source of truth.
+[settings]
+idiomatic_version_file_enable_tools = ["ruby"]

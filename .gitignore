@@ -1,0 +1,12 @@
+.bundle/
+.yardoc/
+*.gem
+pkg/
+tmp/
+vendor/bundle/
+coverage/
+
+# Site
+site/node_modules/
+site/.vitepress/cache/
+site/.vitepress/dist/
