@@ -37,7 +37,10 @@ export default defineConfig({
       },
       {
         text: 'Guides',
-        items: [{ text: 'Your Own Patterns', link: '/guides/your-own-patterns' }],
+        items: [
+          { text: 'Your Own Patterns', link: '/guides/your-own-patterns' },
+          { text: 'JavaScript and JSON Schema', link: '/guides/javascript-and-json-schema' },
+        ],
       },
       {
         text: 'Reference',

@@ -32,6 +32,12 @@ jobs:
         env:
           BUNDLE_WITHOUT: development:quality
 
+      # test/properties/ecmascript_test.rb runs every translated pattern in Node.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Minitest
         run: bundle exec rake test
         env:

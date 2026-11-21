@@ -64,6 +64,10 @@ The only directories that don't mirror `lib/`, excluded from that cop in `.ruboc
   | `times_test.rb` | every value of every date and time field, and what Ruby writes |
   | `numbers_test.rb` | every port, `JSON.parse` on JSON numbers, coordinates over and past their range |
   | `base64_test.rb` | the base64 patterns against Ruby's strict decoder |
+  | `ecmascript_test.rb` | every translated pattern in Node, on every text of every case table |
+
+  `ecmascript_test.rb` reads the case tables from `RegexesTestCase::CASES`, which each section's
+  `cases` call fills, so it requires the section tests; it needs `node`, which CI sets up.
 
   Generated texts come from a fixed `SEED`, so a failure repeats. A property is one assertion over
   the whole collection (`assert_equal expected, texts.grep(pattern)`), which lists every text the

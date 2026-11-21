@@ -91,6 +91,19 @@ matches text character for character, the safe way to put a value into a pattern
 Regexes.literal('.ns.cloudflare.com').trailing   # dots that mean dots
 ```
 
+## In JavaScript and JSON Schema
+
+Every pattern translates into ECMAScript, for the browser, a mobile app or a JSON Schema `pattern`:
+
+```ruby
+Regexes.uuid.whole.ecma_source   # => "^(?<![0-9a-fA-F])[0-9a-fA-F]{8}-…$"
+Regexes.uuid.whole.ecma_flags    # => "u"
+```
+
+What the two languages write differently is rewritten (`\A` becomes `^`, the dot `[^\n]`); what ECMAScript
+can't match the same way (`Regexes.emoji`'s grapheme clusters) raises `Regexes::UntranslatableError`. The test
+suite runs every translated pattern in Node against Ruby.
+
 ## Your own patterns
 
 Register a shape of your application's and it's named, varied and composed like the built-in ones:

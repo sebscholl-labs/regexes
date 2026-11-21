@@ -201,6 +201,25 @@ module Regexes
     # @return [String]
     def embedded = options.zero? ? source : to_s
 
+    # ── ECMAScript ──────────────────────────────────────────────────────────────────────────────────────────
+
+    # The expression as ECMAScript writes it, for JavaScript (+new RegExp(source, flags)+, with {#ecma_flags})
+    # and for a JSON Schema +pattern+. Anchors become +^+ and +$+, which there anchor to the text:
+    #
+    #   Regexes.uuid.whole.ecma_source   # => "^(?<![0-9a-fA-F])[0-9a-fA-F]{8}-…(?![0-9a-fA-F])$"
+    #
+    # A JSON Schema +pattern+ searches, as an unanchored expression does, so give it a +.whole+ expression's.
+    #
+    # @return [String] the source, frozen
+    # @raise [UntranslatableError] when it uses what ECMAScript has no faithful equivalent for (+\X+, a name
+    #   captured twice, atomic groups, inline options), rather than translate it into something else
+    def ecma_source = Ecma.source(self)
+
+    # @return [String] the flags {#ecma_source} needs: +u+ (Unicode, for its property escapes and strict
+    #   escapes), and +i+ when the expression ignores case
+    # @raise [UntranslatableError] when it is in extended mode or lets +.+ match newlines
+    def ecma_flags = Ecma.flags(self)
+
     protected
 
     # @return [String] the body, as one unit a quantifier applies to whole

@@ -5,6 +5,9 @@
 class RegexesTestCase < Minitest::Test
   # A character no named pattern's first example begins or ends with, placed around one to find it in text.
   AROUND = "\u0001"
+  # Every section's case table, by pattern, as each section's test declares it: the texts a suite in
+  # test/properties/ checks every pattern against.
+  CASES  = {} # rubocop:disable Style/MutableConstant -- filled by each section's test as it loads
 
   class << self
     # @param description [String] what the test shows
@@ -30,6 +33,7 @@ class RegexesTestCase < Minitest::Test
     # @param defined_in [String] the section's file, under +lib/regexes/patterns/+, without +.rb+
     # @return [void]
     def cases(table, defined_in:)
+      CASES.merge!(table)
       table.each { |name, (matches, refuses)| pattern_tests(name, matches, refuses) }
 
       test "every pattern defined in patterns/#{defined_in}.rb has cases" do

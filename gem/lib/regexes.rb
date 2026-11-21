@@ -3,6 +3,7 @@
 require 'regexes/version'
 require 'regexes/expression'
 require 'regexes/character_class'
+require 'regexes/ecma'
 
 # Regular expressions named for what they match rather than what they are used for, so one is found and reused
 # instead of written again inline. Each is a +Regexp+ ({Expression}) with the variations every expression

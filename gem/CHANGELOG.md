@@ -33,6 +33,8 @@
 - Codes: `e164_phone_number`, `iban`, `bic`, `language_tag` and `hex_color`.
 - Text: `markdown_link`, `ruby_format_reference`, `mustache_tag`, `shell_variable_reference`, `file_extension` and
   `emoji`.
+- `Expression#ecma_source` and `#ecma_flags` translate an expression into ECMAScript, for JavaScript and JSON
+  Schema; what ECMAScript can't match the same way raises `Regexes::UntranslatableError`.
 
 ### Changed
 

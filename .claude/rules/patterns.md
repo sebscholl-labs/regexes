@@ -12,6 +12,7 @@ paths:
 | A named pattern | `gem/lib/regexes/patterns/<section>.rb` | `Regexes.uuid` in `identifiers.rb` |
 | A way to vary or build expressions | `gem/lib/regexes/expression.rb` (every expression) or `character_class.rb` (sets only) | `#one_or_more`, `#excluded` |
 | Composition, literals, registration | `gem/lib/regexes.rb` | `Regexes.sequence`, `Regexes.register` |
+| Translation into ECMAScript | `gem/lib/regexes/ecma.rb` | `Regexes::Ecma`, behind `Expression#ecma_source` |
 
 The sections, loaded by `gem/lib/regexes.rb` in this order (each may build on those before it):
 `sets`, `breaks`, `numbers`, `identifiers`, `times`, `network`, `mail`, `codes`, `text`. Each reopens
@@ -66,7 +67,12 @@ when called without it, and builds the variation in a private helper when called
 - **The doc comment** opens with an example in `+…+` of what it matches and what it refuses, says
   where it stops (what it doesn't check: a checksum, the calendar), names the standard it follows
   with its section, and lists its captures. `@return` says what one match is, in a phrase.
-- **Captures** are named, in the standard's terms (`local`, `domain`, `id_left`), never numbered.
+- **Captures** are named, in the standard's terms (`local`, `domain`, `id_left`), never numbered, and
+  a name is captured once: a pattern written two ways captures in a lookahead before the two
+  (`SHELL_VARIABLE_REFERENCE`), so ECMAScript can read it.
+- **It translates.** `ecma_source` must work on it (`test/regexes/ecma_test.rb` lists the one named
+  pattern that doesn't, `emoji`), so avoid what ECMAScript has no equivalent for: `\X`, `\h`, `\Z`,
+  atomic groups, inline options, a capture name used twice.
 
 ## Keeping tests and docs in step
 

@@ -3,20 +3,24 @@
 module Regexes
   # ── Text ──────────────────────────────────────────────────────────────────────────────────────────────────
 
+  # A pattern written two ways (a name in braces or bare) captures the name once, in a lookahead before the two,
+  # so no capture's name is used twice and ECMAScript can read it.
   name        = '[A-Za-z_][A-Za-z0-9_]*'
   destination = '[^()\s]+(?:\([^()\s]*\)[^()\s]*)*'
   tag_name    = '[^{}\s](?:[^{}]*[^{}\s])?'
+  sigil       = '[#^/!&>]'
+  blank       = '[ \t]*'
 
   MARKDOWN_CODE_SPAN       = Expression.new('`(?<code>[^`]+)`')
   MARKDOWN_LINK            = Expression.new("\\[(?<text>[^\\[\\]\\n]+)\\]\\((?<destination>#{destination})\\)")
   RUBY_FORMAT_REFERENCE    = Expression.new(
-    "(?<!%)%(?:\\{(?<name>#{name})\\}|<(?<name>#{name})>[-+ 0#]*[0-9]*(?:\\.[0-9]+)?[A-Za-z])"
+    "(?<!%)%(?=[{<](?<name>#{name}))(?:\\{#{name}\\}|<#{name}>[-+ 0#]*[0-9]*(?:\\.[0-9]+)?[A-Za-z])"
   )
   MUSTACHE_TAG             = Expression.new(
-    "\\{\\{(?:\\{[ \\t]*(?<name>#{tag_name})[ \\t]*\\}" \
-    "|[ \\t]*(?<sigil>[#^/!&>])?[ \\t]*(?<name>#{tag_name})[ \\t]*)\\}\\}"
+    "\\{\\{(?=(?:\\{|#{blank}(?<sigil>#{sigil})?)#{blank}(?<name>#{tag_name}))" \
+    "(?:\\{#{blank}#{tag_name}#{blank}\\}|#{blank}#{sigil}?#{blank}#{tag_name}#{blank})\\}\\}"
   )
-  SHELL_VARIABLE_REFERENCE = Expression.new("(?<!\\\\)\\$(?:\\{(?<name>#{name})\\}|(?<name>#{name}))")
+  SHELL_VARIABLE_REFERENCE = Expression.new("(?<!\\\\)\\$(?=\\{?(?<name>#{name}))(?:\\{#{name}\\}|#{name})")
   FILE_EXTENSION           = Expression.new('\.(?<extension>[A-Za-z0-9]+)')
   EMOJI                    = Expression.new(
     '(?=\p{Extended_Pictographic}|\p{Regional_Indicator}|[0-9#*]️?⃣)\X'
