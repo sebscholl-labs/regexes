@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 - 2026-11-22
+
+### Changed
+
+- `leading`, `trailing` and `whole` leave out a boundary of one set at the end they anchor to the text:
+  `Regexes.uuid.whole` is `\A[0-9a-fA-F]{8}-…\z`, no longer `\A(?<![0-9a-fA-F])…(?![0-9a-fA-F])\z`.
+  Nothing lies past an anchored end for the boundary to refuse, so every pattern matches what it did;
+  `ecma_source` is shorter, and a JSON Schema built from it reads as one written by hand.
+
 ## 0.1.0 - 2026-11-21
 
 ### Added

@@ -68,5 +68,5 @@ Regexes.http_url.match('http://[::1]:8080/a?b=c#d')[:host]  # => "[::1]"
 
 ```ruby
 Regexes.e164_phone_number.whole.ecma_source
-# => "^(?<![0-9+])\\+[1-9][0-9]{1,14}(?![0-9])$"
+# => "^\\+[1-9][0-9]{1,14}$"
 ```

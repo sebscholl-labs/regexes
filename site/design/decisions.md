@@ -44,7 +44,8 @@ copied again, unanchored, the next time someone needs to search.
 A value made of a fixed count of characters — an IPv4 address's octets, a UUID's hex digits, a date's
 fields, an IBAN's letters — is bounded by lookarounds of those characters. Without them, searching
 `see 1.2.3.456` finds `1.2.3.45`, and `12026-11-21` holds a date. With them, a search finds only whole
-values, and `.whole` is unchanged.
+values. `.whole` matches what it would without them, and writes none: at an end anchored to the
+text there is nothing beside the value for a boundary to refuse.
 
 The boundary leaves out characters that commonly sit beside a value: a UUID's has no hyphen, so
 `order-01890a5d-…` still yields its UUID. And it's not applied to open-ended values: `integer` already

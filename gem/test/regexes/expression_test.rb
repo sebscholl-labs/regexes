@@ -32,6 +32,36 @@ class RegexesExpressionTest < RegexesTestCase
     refute_match Regexes.lowercase_letters.one_or_more.whole, 'abc1'
   end
 
+  test 'whole leaves out a boundary of one set at the start, where nothing comes before' do
+    bounded = Regexes.digits.exactly(3).not_preceded_by(Regexes.letters)
+
+    assert_equal '\\A[0-9]{3}\\z', bounded.whole.source
+  end
+
+  test 'whole leaves out a boundary of one set at the end, where nothing comes after' do
+    bounded = Regexes.digits.exactly(3).not_followed_by(Regexes.letters)
+
+    assert_equal '\\A[0-9]{3}\\z', bounded.whole.source
+  end
+
+  test 'leading keeps the boundary at the end it leaves open' do
+    bounded = Regexes.digits.exactly(3).not_preceded_by(Regexes.letters).not_followed_by(Regexes.letters)
+
+    assert_equal '\\A[0-9]{3}(?![A-Za-z])', bounded.leading.source
+  end
+
+  test 'a line anchor keeps the boundary, since a line starts after a character' do
+    bounded = Regexes.digits.exactly(3).not_preceded_by(Regexes.letters)
+
+    assert_includes bounded.whole_line.source, '(?<![A-Za-z])'
+  end
+
+  test 'whole keeps a lookbehind of more than one character' do
+    bounded = Regexes.digits.exactly(3).not_preceded_by(Regexes.literal('ab'))
+
+    assert_equal '\\A(?<!ab)[0-9]{3}\\z', bounded.whole.source
+  end
+
   test 'leading and trailing together are whole' do
     assert_equal Regexes.lowercase_letters.one_or_more.whole, Regexes.lowercase_letters.one_or_more.leading.trailing
   end

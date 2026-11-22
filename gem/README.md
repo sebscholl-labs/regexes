@@ -111,7 +111,7 @@ Every pattern but `emoji` translates into ECMAScript, for the browser, a mobile 
 `pattern`:
 
 ```ruby
-Regexes.uuid.whole.ecma_source   # => "^(?<![0-9a-fA-F])[0-9a-fA-F]{8}-…$"
+Regexes.uuid.whole.ecma_source   # => "^[0-9a-fA-F]{8}-…$"
 Regexes.uuid.whole.ecma_flags    # => "u"
 ```
 
